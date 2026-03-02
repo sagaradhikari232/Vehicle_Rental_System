@@ -1,6 +1,4 @@
-import { Bike, Category, Feature, Testimonial } from '../types';
-
-export const categories: Category[] = [
+export const categories = [
   {
     id: 1,
     name: 'Sports',
@@ -27,7 +25,7 @@ export const categories: Category[] = [
   }
 ];
 
-export const bikes: Bike[] = [
+export const bikes = [
   {
     id: 1,
     name: 'Royal Enfield Classic',
@@ -75,7 +73,7 @@ export const bikes: Bike[] = [
   }
 ];
 
-export const features: Feature[] = [
+export const features = [
   {
     id: 1,
     icon: 'Shield',
@@ -102,7 +100,7 @@ export const features: Feature[] = [
   }
 ];
 
-export const testimonials: Testimonial[] = [
+export const testimonials = [
   {
     id: 1,
     name: 'Binod Bista',

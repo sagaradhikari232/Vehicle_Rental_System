@@ -1,18 +1,9 @@
-import { ReactNode } from 'react';
-
-interface CardProps {
-  children: ReactNode;
-  className?: string;
-  hover?: boolean;
-  gradient?: boolean;
-}
-
 export default function Card({
   children,
   className = '',
   hover = false,
   gradient = false
-}: CardProps) {
+}) {
   const baseStyles = 'rounded-2xl backdrop-blur-sm border border-gray-100';
   const bgStyles = gradient
     ? 'bg-gradient-to-br from-white via-white to-orange-50'

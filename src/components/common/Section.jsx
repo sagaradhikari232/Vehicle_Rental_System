@@ -1,18 +1,9 @@
-import { ReactNode } from 'react';
-
-interface SectionProps {
-  children: ReactNode;
-  className?: string;
-  id?: string;
-  background?: 'white' | 'gray' | 'dark';
-}
-
 export default function Section({
   children,
   className = '',
   id,
   background = 'white'
-}: SectionProps) {
+}) {
   const backgroundStyles = {
     white: 'bg-white',
     gray: 'bg-gray-50',

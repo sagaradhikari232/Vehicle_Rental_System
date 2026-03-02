@@ -5,16 +5,11 @@ import Card from '../common/Card';
 import { testimonials } from '../../data/bikes';
 
 export default function Testimonials() {
-  const [activeId, setActiveId] = useState<number>(testimonials[0].id);
+  const [activeId, setActiveId] = useState(testimonials[0].id);
 
   return (
     <Section background="gray">
       <div className="text-center mb-20">
-        <div className="inline-block mb-6">
-          <span className="bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm font-semibold">
-            TESTIMONIALS
-          </span>
-        </div>
         <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
           What Our Riders Say
         </h2>

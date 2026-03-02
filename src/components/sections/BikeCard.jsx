@@ -1,15 +1,8 @@
 import { Star } from 'lucide-react';
 import Card from '../common/Card';
 import Button from '../common/Button';
-import { Bike } from '../../types';
 
-interface BikeCardProps {
-  bike: Bike;
-  isHovered: boolean;
-  onHoverChange: (isHovered: boolean) => void;
-}
-
-export default function BikeCard({ bike, isHovered, onHoverChange }: BikeCardProps) {
+export default function BikeCard({ bike, isHovered, onHoverChange }) {
   return (
     <Card
       hover

@@ -1,4 +1,4 @@
-export function smoothScrollToElement(selector: string) {
+export function smoothScrollToElement(selector) {
   const element = document.querySelector(selector);
   if (element) {
     element.scrollIntoView({ behavior: 'smooth', block: 'start' });

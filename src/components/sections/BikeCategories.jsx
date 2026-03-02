@@ -4,7 +4,7 @@ import Section from '../common/Section';
 import CategoryCard from './CategoryCard';
 import { categories } from '../../data/bikes';
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+const ICON_MAP = {
   Zap,
   Bike,
   Wind,
@@ -12,11 +12,6 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 
 const SectionHeader = () => (
   <div className="text-center mb-20">
-    <div className="inline-block mb-6">
-      <span className="bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm font-semibold">
-        BIKE CATEGORIES
-      </span>
-    </div>
     <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
       Explore Our Collection
     </h2>
@@ -27,7 +22,7 @@ const SectionHeader = () => (
 );
 
 export default function BikeCategories() {
-  const [hoveredId, setHoveredId] = useState<number | null>(null);
+  const [hoveredId, setHoveredId] = useState(null);
 
   return (
     <Section id="categories" background="gray">

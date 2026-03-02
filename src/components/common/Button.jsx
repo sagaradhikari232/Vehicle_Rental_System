@@ -1,11 +1,5 @@
-import { ButtonHTMLAttributes, ReactNode } from 'react';
-
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  children: ReactNode;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
-  icon?: boolean;
-}
+import React from 'react';
+import { Loader2 } from 'lucide-react'; // Make sure lucide-react is installed
 
 export default function Button({
   children,
@@ -13,11 +7,15 @@ export default function Button({
   size = 'md',
   className = '',
   icon = false,
+  isLoading = false, // Added for Auth
+  disabled,          // Added for Auth
   ...props
-}: ButtonProps) {
-  const baseStyles = 'inline-flex items-center justify-center font-semibold transition-all duration-300';
+}) {
+  const baseStyles = 'inline-flex items-center justify-center font-semibold transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100';
   const shapeStyles = icon ? 'rounded-full' : 'rounded-lg';
-  const hoverStyles = 'hover:scale-105 hover:-translate-y-0.5';
+  
+  // Hover styles (disabled when loading)
+  const hoverStyles = !isLoading ? 'hover:scale-105 hover:-translate-y-0.5' : '';
 
   const variants = {
     primary: `bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-2xl ${hoverStyles}`,
@@ -34,10 +32,19 @@ export default function Button({
 
   return (
     <button
+      disabled={isLoading || disabled}
       className={`${baseStyles} ${shapeStyles} ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     >
-      {children}
+      {/* Show spinner when loading, otherwise show children */}
+      {isLoading ? (
+        <>
+          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+          <span>Processing...</span>
+        </>
+      ) : (
+        children
+      )}
     </button>
   );
 }

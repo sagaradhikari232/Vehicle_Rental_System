@@ -1,21 +1,11 @@
 import Card from '../common/Card';
-import { Category } from '../../types';
-
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {};
-
-interface CategoryCardProps {
-  category: Category;
-  isHovered: boolean;
-  onHoverChange: (isHovered: boolean) => void;
-  iconComponent: React.ComponentType<{ className?: string }>;
-}
 
 export default function CategoryCard({
   category,
   isHovered,
   onHoverChange,
   iconComponent: IconComponent
-}: CategoryCardProps) {
+}) {
   return (
     <Card
       hover

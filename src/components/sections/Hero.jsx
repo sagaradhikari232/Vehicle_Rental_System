@@ -2,7 +2,6 @@ import { MapPin, Calendar, Bike, ArrowRight } from 'lucide-react';
 import Button from '../common/Button';
 
 export default function Hero() {
-
   return (
     <section
       id="home"
@@ -24,11 +23,6 @@ export default function Hero() {
       <div className="container mx-auto px-4 md:px-6 lg:px-8 relative z-10 pt-24 pb-12">
         <div className="grid lg:grid-cols-2 gap-16 items-center min-h-[calc(100vh-120px)]">
           <div className="text-white flex flex-col justify-center">
-            <div className="mb-6 inline-block w-fit">
-              <span className="bg-orange-500/20 text-orange-400 px-4 py-2 rounded-full text-sm font-semibold border border-orange-500/50">
-                Premium Bike Rentals Available
-              </span>
-            </div>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-8 tracking-tight">
               Ride Your Dream
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-500 mt-3">
