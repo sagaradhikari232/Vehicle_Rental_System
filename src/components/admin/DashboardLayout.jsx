@@ -1,26 +1,53 @@
-import React, { useState } from 'react';
-import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom'; // Added Outlet & useNavigate
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Car, CalendarCheck, Users, 
-  CreditCard, Settings, LogOut, Menu, X, Bell, Search 
+  CreditCard, Settings, LogOut, Menu, ChevronLeft, 
+  Bell, Search, Command, Sun, Moon 
 } from 'lucide-react';
 
 const SidebarItem = ({ icon: Icon, label, path, active, collapsed }) => (
   <Link 
     to={path}
-    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
-      ${active ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'text-gray-500 hover:bg-gray-50 hover:text-blue-600'}`}
+    className={`
+      relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group
+      ${active 
+        ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-900 dark:text-amber-400 shadow-sm' 
+        : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-100'}
+    `}
   >
-    <Icon size={20} strokeWidth={active ? 2.5 : 2} />
-    {!collapsed && <span className="font-medium">{label}</span>}
+    {active && (
+      <div className="absolute left-0 w-1 h-6 bg-amber-500 rounded-r-full" />
+    )}
+    <Icon 
+      size={20} 
+      strokeWidth={active ? 2.5 : 2} 
+      className={`transition-colors ${active ? 'text-amber-600' : 'group-hover:text-amber-500'}`}
+    />
+    {!collapsed && <span className="font-bold text-sm tracking-tight">{label}</span>}
   </Link>
 );
 
-const DashboardLayout = () => { // Removed {children} prop
+const DashboardLayout = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(
+    localStorage.getItem('theme') === 'dark' || 
+    (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  );
+  
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
@@ -36,82 +63,92 @@ const DashboardLayout = () => { // Removed {children} prop
     return current ? current.label : 'Admin';
   };
 
-  const handleLogout = () => {
-    // Add any cleanup here (like clearing localStorage)
-    navigate('/');
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex font-sans antialiased text-slate-900 dark:text-slate-100 transition-colors duration-300">
+      
+      {/* Mobile Backdrop */}
+      {isMobileOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden" onClick={() => setIsMobileOpen(false)} />
+      )}
+
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 bg-white border-r border-gray-100 transition-all duration-300 
-        ${isCollapsed ? 'w-20' : 'w-64'} ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-        
-        <div className="h-20 flex items-center justify-between px-6">
-          {!isCollapsed && <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">V-Drive.</span>}
-          <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 hover:bg-gray-50 rounded-lg text-gray-400 lg:block hidden">
-            {isCollapsed ? <Menu size={20} /> : <X size={20} />}
-          </button>
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 transition-all duration-300
+        ${isCollapsed ? 'w-20' : 'w-64'} ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <div className="h-20 flex items-center px-6 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-400 rounded-xl flex items-center justify-center shadow-lg shadow-amber-100 dark:shadow-none">
+              <Car className="text-amber-950" size={22} strokeWidth={2.5} />
+            </div>
+            {!isCollapsed && <span className="text-xl font-black tracking-tighter dark:text-white">V-DRIVE<span className="text-amber-500">.</span></span>}
+          </div>
         </div>
 
-        <nav className="px-4 space-y-2">
+        <nav className="px-4 space-y-1.5">
           {menuItems.map((item) => (
-            <SidebarItem 
-              key={item.path} 
-              {...item} 
-              active={location.pathname === item.path}
-              collapsed={isCollapsed}
-            />
+            <SidebarItem key={item.path} {...item} active={location.pathname === item.path} collapsed={isCollapsed} />
           ))}
         </nav>
 
-        <div className="absolute bottom-8 w-full px-4">
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl w-full transition-colors"
-          >
+        <div className="absolute bottom-6 w-full px-4 space-y-2">
+          <button onClick={() => navigate('/')} className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl w-full transition-all group">
             <LogOut size={20} />
-            {!isCollapsed && <span className="font-medium">Logout</span>}
+            {!isCollapsed && <span className="font-bold text-sm">Logout</span>}
+          </button>
+          <button onClick={() => setIsCollapsed(!isCollapsed)} className="hidden lg:flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 rounded-xl w-full transition-all">
+            <ChevronLeft size={20} className={isCollapsed ? 'rotate-180' : ''} />
+            {!isCollapsed && <span className="font-bold text-sm">Collapse View</span>}
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
       <main className={`flex-1 transition-all duration-300 ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-        {/* Topbar */}
-        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100 h-20 flex items-center justify-between px-8">
+        <header className="sticky top-0 z-40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 h-20 flex items-center justify-between px-8 transition-colors">
           <div className="flex items-center gap-4">
-            <button onClick={() => setIsMobileOpen(!isMobileOpen)} className="lg:hidden p-2 text-gray-500">
+            <button onClick={() => setIsMobileOpen(true)} className="lg:hidden p-2 text-slate-600 dark:text-slate-400">
               <Menu size={24} />
             </button>
-            <h1 className="text-xl font-semibold text-gray-800">{getPageTitle()}</h1>
+            <h1 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">{getPageTitle()}</h1>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="relative hidden md:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <div className="flex items-center gap-3 md:gap-6">
+            {/* Search Bar */}
+            <div className="relative hidden md:flex items-center">
+              <Search className="absolute left-3 text-slate-400" size={16} />
               <input 
                 type="text" 
-                placeholder="Search anything..." 
-                className="pl-10 pr-4 py-2 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 w-64 text-sm"
+                placeholder="Search..." 
+                className="pl-10 pr-12 py-2 bg-slate-100/50 dark:bg-slate-800/50 border-transparent rounded-xl focus:bg-white dark:focus:bg-slate-800 w-48 focus:w-64 transition-all outline-none text-sm"
               />
             </div>
-            {/* ... other topbar items ... */}
-            <div className="flex items-center gap-3 pl-4 border-l border-gray-100 cursor-pointer">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                JD
+
+            {/* Theme Toggle */}
+            <button 
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-amber-400 rounded-xl hover:ring-2 ring-amber-400/20 transition-all"
+            >
+              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+
+            <button className="relative p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all">
+              <Bell size={20} />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 border-2 border-white dark:border-slate-900 rounded-full" />
+            </button>
+
+            {/* User Profile */}
+            <div className="flex items-center gap-3 pl-4 border-l border-slate-100 dark:border-slate-800 group cursor-pointer">
+              <div className="hidden text-right md:block">
+                <p className="text-sm font-bold dark:text-slate-200">John Doe</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Admin</p>
               </div>
-              <div className="hidden sm:block">
-                <p className="text-sm font-semibold text-gray-800">John Doe</p>
-                <p className="text-xs text-gray-500">Super Admin</p>
-              </div>
+              <div className="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center text-amber-950 font-black">JD</div>
             </div>
           </div>
         </header>
 
-        {/* --- CRITICAL CHANGE --- */}
-        <div className="p-8">
-          {/* Outlet is where Dashboard.jsx or Vehicles.jsx will render */}
+        <div className="p-4 md:p-8 max-w-[1600px] mx-auto">
           <Outlet /> 
         </div>
       </main>

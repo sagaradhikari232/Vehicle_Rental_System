@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 // Public Pages
-import LandingPage from './components/pages/LandingPage'; // We move the wrapper logic here
+import LandingPage from './components/pages/LandingPage'; 
 import Login from './components/sections/Login';
 import Signup from './components/sections/Signup';
 import ForgotPassword from './components/sections/ForgetPassword';
