@@ -1,0 +1,1 @@
+export const DB_NAME = "vehicle_rental_system"
