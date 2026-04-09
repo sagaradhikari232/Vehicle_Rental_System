@@ -1,103 +1,88 @@
-// models/Payment.js
-import mongoose, { Schema } from "mongoose";
+import { Schema, model } from "mongoose";
 
-const paymentSchema = new Schema({
-  booking_id: {
-    type: Schema.Types.ObjectId,
-    required: true,
-    ref: 'Booking',
-    index: true
+const paymentSchema = new Schema(
+  {
+    booking: {
+      type: Schema.Types.ObjectId,
+      ref: "Booking",
+      required: true,
+    },
+
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    // Amount in NPR (human-readable)
+    amount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    // ─── Khalti specific fields ───────────────────────────────
+
+    // pidx: Khalti's unique payment identifier — returned on initiate
+    // Used for all future references including lookup
+    pidx: {
+      type: String,
+      default: null,
+    },
+
+    // Khalti's transaction_id — only available after Completed status
+    khalti_transaction_id: {
+      type: String,
+      default: null,
+    },
+
+    // The payment URL Khalti returns — frontend redirects user here
+    payment_url: {
+      type: String,
+      default: null,
+    },
+
+    // Khalti payment link expiry time
+    expires_at: {
+      type: Date,
+      default: null,
+    },
+
+    // ─── Status ───────────────────────────────────────────────
+
+    // Maps to Khalti lookup statuses + our own internal ones
+    status: {
+      type: String,
+      enum: [
+        "initiated",    // payment created on our side, not yet sent to Khalti
+        "pending",      // sent to Khalti, awaiting user payment
+        "completed",    // Khalti confirmed: status = "Completed"
+        "failed",       // Khalti returned failed
+        "expired",      // Khalti payment link expired
+        "refunded",     // Khalti confirmed refund
+        "user_canceled",// User canceled on Khalti's payment page
+      ],
+      default: "initiated",
+      required: true,
+    },
+
+    // Raw Khalti lookup response — stored for audit/debugging
+    khalti_response: {
+      type: Schema.Types.Mixed,
+      default: null,
+    },
   },
-
-  rental_amount: {
-    type: Number,
-    required: true, min: 0
-  },
-  security_deposit: {
-    type: Number,
-    default: 0,
-    min: 0
-  },
-  total_charged: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-
-  payment_method: {
-    type: String,
-    enum: ['khalti', 'cash', 'card'],
-    required: true
-  },
-
-  payment_gateway: {
-    type: String,
-    enum: [ 'khalti', 'cash', 'manual'],
-    required: true
-  },
-
-  // Method-specific
-  khalti_pidx: { type: String, sparse: true, unique: true },
-  transaction_note: String,   // manual entry / receipt number
-
-  status: {
-    type: String,
-    enum: ['pending', 'processing', 'paid', 'partially_paid', 'failed', 'cancelled', 'refunded', 'partially_refunded'],
-    default: 'pending',
-    index: true
-  },
-
-  paid_at: Date,
-  refunded_at: Date,
-  failed_at: Date,
-
-  currency: { type: String, default: 'NPR' },
-
-  // Optional but very useful
-  payer_phone: String,
-  payer_name: String,
-  remarks: String,
-
-  gateway_raw: { type: Schema.Types.Mixed }
-}, {
-  timestamps: true,
-  toJSON: { virtuals: true }
-});
-
-paymentSchema.pre('save', function (next) {
-  if (this.isModified('status') && this.status === 'paid' && !this.paid_at) {
-    this.paid_at = new Date();
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
-  next();
-});
+);
 
-paymentSchema.index({ booking_id: 1, status: 1 });
-paymentSchema.index({ status: 1, paid_at: -1 });
+// ─── Indexes ────────────────────────────────────────────────────
+paymentSchema.index({ booking: 1 });
+paymentSchema.index({ user: 1, createdAt: -1 });
+paymentSchema.index({ pidx: 1 }, { sparse: true }); // fast lookup by Khalti pidx
+paymentSchema.index({ status: 1 });
 
-
-// Virtual for display (optional)
-paymentSchema.virtual('displayId').get(function () {
-  return `PAY-${this.id.toString().padStart(8, '0')}`;  // e.g. PAY-00050001
-});
-
-// Pre-save: basic business rules
-paymentSchema.pre('save', function (next) {
-  // If status = 'paid' but no paid_at → set it automatically
-  if (this.isModified('status') && this.status === 'paid' && !this.paid_at) {
-    this.paid_at = new Date();
-  }
-
-  // Optional: cash payments usually don't have transaction_id
-  if (this.payment_method === 'cash' && this.transaction_id) {
-    this.transaction_id = null;
-  }
-
-  next();
-});
-
-// Useful indexes
-paymentSchema.index({ booking_id: 1, status: 1 });
-paymentSchema.index({ status: 1, paid_at: -1 });     // For reports: recent successful payments
-
-export const Payment = mongoose.model('Payment', paymentSchema);
-
+export const Payment = model("Payment", paymentSchema);
