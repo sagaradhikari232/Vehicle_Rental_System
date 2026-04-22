@@ -51,12 +51,13 @@ const vehicleSchema = new Schema({
     type: Number,          
     required: [true, 'Daily rate is required'],
     min: [500, 'Rate cannot be negative'],
-    max: [20000, 'Rate is too high']
+    max: [15000, 'Rate is too high']
   },
 
   hourly_rate: {
     type: Number,
-    min: [100, 'Rate cannot be negative']
+    min: [100, 'Rate cannot be negative'],
+    max: [2500, 'Rate is too high']
   },
 
   image_url: {

@@ -41,14 +41,14 @@ const bookingSchema = new Schema(
     // ─── Locations ─────────────────────────────────────────────
     pickup_location: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
       maxlength: 255,
     },
 
     dropoff_location: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
       maxlength: 255,
     },
@@ -187,7 +187,7 @@ bookingSchema.virtual("grand_total").get(function () {
 // ─── Middleware ─────────────────────────────────────────────────
 
 // Auto-set cancelled_at / completed_at on status change
-bookingSchema.pre("save", function (next) {
+bookingSchema.pre("save", function () {   // no next parameter
   if (this.isModified("status")) {
     if (this.status === "cancelled" && !this.cancelled_at) {
       this.cancelled_at = new Date();
@@ -196,7 +196,7 @@ bookingSchema.pre("save", function (next) {
       this.completed_at = new Date();
     }
   }
-  next();
+  // no next() call needed — synchronous hook returns implicitly
 });
 
 // ─── Indexes ────────────────────────────────────────────────────

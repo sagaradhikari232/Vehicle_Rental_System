@@ -1,5 +1,6 @@
 import { Booking } from "../models/booking.model.js";
 import { Vehicle } from "../models/vehicle.model.js";
+import { Payment } from "../models/payment.model.js";
 
 // ─────────────────────────────────────────────
 // HELPERS
@@ -61,7 +62,7 @@ const calculateRent = (vehicleDoc, pickup, dropoff) => {
 
 // ─────────────────────────────────────────────
 // @desc    Create a new booking
-// @route   POST /api/bookings
+// @route   POST /api/v1/bookings
 // @access  Private (user)
 // ─────────────────────────────────────────────
 export const createBooking = async (req, res) => {
@@ -74,6 +75,7 @@ export const createBooking = async (req, res) => {
       dropoff_location,
       notes,
     } = req.body;
+    console.log(vehicle,pickup_datetime, dropoff_datetime)
 
     const userId = req.user._id;
 
@@ -91,7 +93,7 @@ export const createBooking = async (req, res) => {
       return res.status(400).json({ message: "Dropoff must be after pickup." });
     }
 
-    // 2. Validate notes length for a clean 400 response
+    // 2. Validate notes length
     if (notes && notes.length > 1000) {
       return res.status(400).json({ message: "Notes cannot exceed 1000 characters." });
     }
@@ -117,7 +119,8 @@ export const createBooking = async (req, res) => {
     const { total_rent_amount } = calculateRent(vehicleDoc, pickup, dropoff);
 
     // 6. Create booking
-    // Note: security_deposit is not on the Vehicle model — defaults to 0
+    // Status starts as "pending" — moves to "confirmed" automatically
+    // once Khalti payment completes (via khaltiCallback or verifyPayment).
     const booking = await Booking.create({
       user: userId,
       vehicle,
@@ -132,8 +135,9 @@ export const createBooking = async (req, res) => {
       payment_status: "pending",
     });
 
+    // 7. Return booking — frontend immediately calls POST /api/v1/payments/initiate/:bookingId
     return res.status(201).json({
-      message: "Booking created successfully.",
+      message: "Booking created. Proceed to payment.",
       booking,
     });
   } catch (error) {
@@ -144,7 +148,7 @@ export const createBooking = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // @desc    Get all bookings (admin: all, user: own)
-// @route   GET /api/bookings
+// @route   GET /api/v1/bookings
 // @access  Private
 // ─────────────────────────────────────────────
 export const getAllBookings = async (req, res) => {
@@ -166,8 +170,8 @@ export const getAllBookings = async (req, res) => {
     const [bookings, total] = await Promise.all([
       Booking.find(filter)
         .populate("user", "name email phone")
-        // brand, model, registration_number match actual Vehicle schema
         .populate("vehicle", "brand model registration_number hourly_rate daily_rate type")
+        .populate("payment", "status pidx khalti_transaction_id amount")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(Number(limit)),
@@ -188,7 +192,7 @@ export const getAllBookings = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // @desc    Get logged-in user's own bookings
-// @route   GET /api/bookings/my
+// @route   GET /api/v1/bookings/my
 // @access  Private (user)
 // ─────────────────────────────────────────────
 export const getMyBookings = async (req, res) => {
@@ -202,8 +206,8 @@ export const getMyBookings = async (req, res) => {
 
     const [bookings, total] = await Promise.all([
       Booking.find(filter)
-        // image_url is the correct field name (not "images")
         .populate("vehicle", "brand model registration_number image_url type status")
+        .populate("payment", "status pidx payment_url amount")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(Number(limit)),
@@ -224,16 +228,15 @@ export const getMyBookings = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // @desc    Get a single booking by ID
-// @route   GET /api/bookings/:id
+// @route   GET /api/v1/bookings/:id
 // @access  Private
 // ─────────────────────────────────────────────
 export const getBookingById = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id)
       .populate("user", "name email phone")
-      // registration_number replaces plate_number
       .populate("vehicle", "brand model registration_number hourly_rate daily_rate type fuel_type seats image_url")
-      .populate("payment");
+      .populate("payment", "status pidx khalti_transaction_id amount payment_url expires_at createdAt");
 
     if (!booking) {
       return res.status(404).json({ message: "Booking not found." });
@@ -256,8 +259,13 @@ export const getBookingById = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // @desc    Update booking (reschedule / update notes)
-// @route   PATCH /api/bookings/:id
+// @route   PATCH /api/v1/bookings/:id
 // @access  Private (owner or admin)
+//
+// SYNC NOTE: If dates change on a paid+confirmed booking, the rent
+// amount changes but payment already went through. The difference
+// should be handled via extra_charges at completion — we do NOT
+// re-initiate payment here. We just update the booking amount record.
 // ─────────────────────────────────────────────
 export const updateBooking = async (req, res) => {
   try {
@@ -319,7 +327,7 @@ export const updateBooking = async (req, res) => {
         });
       }
 
-      // Recalculate rent using correct vehicle fields (daily_rate / hourly_rate)
+      // Recalculate rent
       const vehicleDoc = await Vehicle.findById(booking.vehicle);
       const { total_rent_amount } = calculateRent(vehicleDoc, pickup, dropoff);
 
@@ -346,8 +354,13 @@ export const updateBooking = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // @desc    Cancel a booking
-// @route   PATCH /api/bookings/:id/cancel
+// @route   PATCH /api/v1/bookings/:id/cancel
 // @access  Private (owner or admin)
+//
+// SYNC: If payment was completed (paid), we mark the Payment document
+// as "refunded" so the admin knows a Khalti dashboard refund is needed.
+// Khalti does not expose a programmatic refund API — refunds are issued
+// manually from the merchant dashboard, then status is already updated here.
 // ─────────────────────────────────────────────
 export const cancelBooking = async (req, res) => {
   try {
@@ -384,6 +397,28 @@ export const cancelBooking = async (req, res) => {
       });
     }
 
+    // ── PAYMENT SYNC ──────────────────────────────────────────────
+    // If a completed (paid) payment exists, mark it refunded.
+    // Admin must then issue the actual refund from Khalti merchant dashboard.
+    let paymentRefundNeeded = false;
+
+    if (booking.payment) {
+      const payment = await Payment.findById(booking.payment);
+
+      if (payment && payment.status === "completed") {
+        payment.status = "refunded";
+        await payment.save();
+        paymentRefundNeeded = true;
+        booking.payment_status = "refunded";
+      } else if (payment && ["initiated", "pending"].includes(payment.status)) {
+        // Payment was started but not completed — just mark failed
+        payment.status = "failed";
+        await payment.save();
+        booking.payment_status = "failed";
+      }
+    }
+    // ── END PAYMENT SYNC ──────────────────────────────────────────
+
     booking.status = "cancelled";
     booking.cancellation_reason = cancellation_reason ?? null;
     // cancelled_at is auto-set by pre-save middleware
@@ -392,6 +427,7 @@ export const cancelBooking = async (req, res) => {
 
     return res.status(200).json({
       message: "Booking cancelled successfully.",
+      refund_required: paymentRefundNeeded, // signals admin that Khalti refund is pending
       booking,
     });
   } catch (error) {
@@ -402,8 +438,13 @@ export const cancelBooking = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // @desc    Confirm a booking (admin only)
-// @route   PATCH /api/bookings/:id/confirm
+// @route   PATCH /api/v1/bookings/:id/confirm
 // @access  Private (admin)
+//
+// SYNC: Confirmation is normally automatic via khaltiCallback when
+// payment succeeds. This manual endpoint exists for edge cases
+// (e.g. cash payment, admin override). It guards against confirming
+// unpaid bookings unless the admin explicitly overrides.
 // ─────────────────────────────────────────────
 export const confirmBooking = async (req, res) => {
   try {
@@ -419,6 +460,25 @@ export const confirmBooking = async (req, res) => {
       });
     }
 
+    // ── PAYMENT SYNC ──────────────────────────────────────────────
+    // Block confirmation if payment is still pending — unless admin
+    // passes force_confirm: true (e.g. for cash payments or test bookings).
+    const { force_confirm } = req.body;
+
+    if (booking.payment_status !== "paid" && !force_confirm) {
+      return res.status(400).json({
+        message:
+          "Cannot confirm an unpaid booking. Complete payment first, or pass force_confirm: true for cash/manual payments.",
+        payment_status: booking.payment_status,
+      });
+    }
+
+    // If force_confirm used for cash payment, mark payment as paid manually
+    if (force_confirm && booking.payment_status === "pending") {
+      booking.payment_status = "paid";
+    }
+    // ── END PAYMENT SYNC ──────────────────────────────────────────
+
     booking.status = "confirmed";
     await booking.save();
 
@@ -431,8 +491,11 @@ export const confirmBooking = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // @desc    Activate a booking (vehicle picked up)
-// @route   PATCH /api/bookings/:id/activate
+// @route   PATCH /api/v1/bookings/:id/activate
 // @access  Private (admin)
+//
+// SYNC: Blocks activation if payment is not confirmed as paid.
+// A vehicle should never leave the lot for an unpaid booking.
 // ─────────────────────────────────────────────
 export const activateBooking = async (req, res) => {
   try {
@@ -447,6 +510,16 @@ export const activateBooking = async (req, res) => {
         message: "Only confirmed bookings can be activated.",
       });
     }
+
+    // ── PAYMENT SYNC ──────────────────────────────────────────────
+    // Hard block — vehicle cannot be handed over without confirmed payment.
+    if (booking.payment_status !== "paid") {
+      return res.status(400).json({
+        message: "Cannot activate booking: payment has not been confirmed as paid.",
+        payment_status: booking.payment_status,
+      });
+    }
+    // ── END PAYMENT SYNC ──────────────────────────────────────────
 
     booking.status = "active";
 
@@ -472,8 +545,13 @@ export const activateBooking = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // @desc    Complete a booking (vehicle returned)
-// @route   PATCH /api/bookings/:id/complete
+// @route   PATCH /api/v1/bookings/:id/complete
 // @access  Private (admin)
+//
+// SYNC: If extra_charges are recorded, we append them to the Payment
+// document's khalti_response as a memo. The admin must separately
+// initiate an extra charge via Khalti dashboard or a new payment flow.
+// The booking's grand_total virtual reflects the full amount owed.
 // ─────────────────────────────────────────────
 export const completeBooking = async (req, res) => {
   try {
@@ -504,14 +582,43 @@ export const completeBooking = async (req, res) => {
     }
 
     // Extra charges (late return, fuel difference, damage, etc.)
-    if (req.body.extra_charges?.length) {
+    const hasExtraCharges = req.body.extra_charges?.length > 0;
+    if (hasExtraCharges) {
       booking.extra_charges = req.body.extra_charges;
     }
 
     await booking.save();
 
+    // ── PAYMENT SYNC ──────────────────────────────────────────────
+    // If extra charges exist, annotate the Payment document so admin
+    // knows an additional charge needs to be processed via Khalti dashboard.
+    if (hasExtraCharges && booking.payment) {
+      const payment = await Payment.findById(booking.payment);
+      if (payment) {
+        const extraTotal = booking.extra_charges.reduce(
+          (sum, c) => sum + c.amount,
+          0
+        );
+        // Store extra charge memo in khalti_response for audit trail
+        payment.khalti_response = {
+          ...(payment.khalti_response ?? {}),
+          extra_charges_memo: {
+            charges: booking.extra_charges,
+            total_extra: extraTotal,
+            grand_total: booking.total_rent_amount + extraTotal,
+            recorded_at: new Date(),
+            note: "Admin must process extra charges separately via Khalti dashboard or new payment.",
+          },
+        };
+        await payment.save();
+      }
+    }
+    // ── END PAYMENT SYNC ──────────────────────────────────────────
+
     return res.status(200).json({
       message: "Booking completed. Vehicle returned.",
+      extra_charges_pending: hasExtraCharges, // signals admin to process extra payment
+      grand_total: booking.grand_total,       // virtual: rent + extras
       booking,
     });
   } catch (error) {
@@ -521,9 +628,12 @@ export const completeBooking = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────
-// @desc    Update payment status (called by payment controller)
-// @route   PATCH /api/bookings/:id/payment-status
-// @access  Private (admin or internal)
+// @desc    Update payment status manually
+// @route   PATCH /api/v1/bookings/:id/payment-status
+// @access  Private (admin only)
+//
+// Used for manual overrides (cash payments, Khalti dashboard reconciliation).
+// Normal payment sync happens automatically via payment.controller.js.
 // ─────────────────────────────────────────────
 export const updatePaymentStatus = async (req, res) => {
   try {
@@ -543,10 +653,18 @@ export const updatePaymentStatus = async (req, res) => {
 
     booking.payment_status = payment_status;
 
-    // Optionally link the Payment document
+    // Optionally link a Payment document
     if (payment) {
       booking.payment = payment;
     }
+
+    // ── PAYMENT SYNC ──────────────────────────────────────────────
+    // If admin manually marks as paid and booking is still pending,
+    // auto-confirm it (same as khaltiCallback does automatically).
+    if (payment_status === "paid" && booking.status === "pending") {
+      booking.status = "confirmed";
+    }
+    // ── END PAYMENT SYNC ──────────────────────────────────────────
 
     await booking.save();
 
@@ -559,7 +677,7 @@ export const updatePaymentStatus = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // @desc    Check vehicle availability for a time window
-// @route   GET /api/bookings/availability?vehicle=&pickup=&dropoff=
+// @route   GET /api/v1/bookings/availability?vehicle=&pickup=&dropoff=
 // @access  Public
 // ─────────────────────────────────────────────
 export const checkAvailability = async (req, res) => {

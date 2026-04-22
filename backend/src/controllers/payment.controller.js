@@ -60,9 +60,16 @@ const mapToBookingPaymentStatus = (paymentStatus) => {
   return map[paymentStatus] ?? "pending";
 };
 
+/**
+ * Returns true for payment statuses that are dead and unrecoverable.
+ * Used to decide whether to clear booking.payment ref for retry.
+ */
+const isTerminalPaymentStatus = (status) =>
+  ["failed", "expired", "user_canceled", "refunded"].includes(status);
+
 // ─────────────────────────────────────────────
 // @desc    Initiate Khalti payment for a booking
-// @route   POST /api/payments/initiate/:bookingId
+// @route   POST /api/v1/payments/initiate/:bookingId
 // @access  Private (user)
 // ─────────────────────────────────────────────
 export const initiatePayment = async (req, res) => {
@@ -72,8 +79,9 @@ export const initiatePayment = async (req, res) => {
     // 1. Fetch booking
     const booking = await Booking.findById(bookingId).populate(
       "user",
-      "name email phone"
+      "fullname email phone"
     );
+    console.log(booking.user);
 
     if (!booking) {
       return res.status(404).json({ message: "Booking not found." });
@@ -91,16 +99,40 @@ export const initiatePayment = async (req, res) => {
       });
     }
 
-    // 4. Prevent duplicate active payments
+    // 4. Check for an existing active payment
+    //
+    // FIX 1 — Before blocking the retry, check if the existing payment
+    // has already expired locally (expires_at < now). If it has, mark it
+    // expired and clear the booking ref so a fresh payment can be created.
+    // Without this, a user whose Khalti link expired is permanently locked
+    // out with "A payment is already in progress" even though it isn't.
     const existingPayment = await Payment.findOne({
       booking: bookingId,
       status: { $in: ["initiated", "pending"] },
     });
+
     if (existingPayment) {
-      return res.status(409).json({
-        message: "A payment is already in progress for this booking.",
-        payment_url: existingPayment.payment_url,
-      });
+      const isLocallyExpired =
+        existingPayment.expires_at && existingPayment.expires_at < new Date();
+
+      if (isLocallyExpired) {
+        // Mark the dead payment expired and free the booking for retry
+        existingPayment.status = "expired";
+        await existingPayment.save();
+
+        booking.payment = null;
+        booking.payment_status = "pending";
+        await booking.save();
+
+        // Fall through to create a fresh payment below
+      } else {
+        // Payment is genuinely still active — block duplicate
+        return res.status(409).json({
+          message: "A payment is already in progress for this booking.",
+          payment_url: existingPayment.payment_url,
+          expires_at: existingPayment.expires_at,
+        });
+      }
     }
 
     // 5. Amount must be at least Rs. 10 (1000 paisa)
@@ -113,13 +145,17 @@ export const initiatePayment = async (req, res) => {
 
     // 6. Build Khalti initiate payload
     const khaltiPayload = {
-      return_url: `${process.env.WEBSITE_URL}/api/payments/callback`,
+      // FIX 4 — return_url must include /v1/ to match Express route mounting.
+      // Original code had /api/payments/callback which 404s on your server.
+      // Khalti completes the payment but your callback never fires —
+      // booking stays pending forever and user sees a broken page.
+      return_url: `${process.env.WEBSITE_URL}/api/v1/payments/callback`,
       website_url: process.env.WEBSITE_URL,
       amount: amountInPaisa,
       purchase_order_id: booking._id.toString(),
       purchase_order_name: `Vehicle Rental - Booking #${booking._id}`,
       customer_info: {
-        name: booking.user.name,
+        name: booking.user.fullname,
         email: booking.user.email,
         phone: booking.user.phone,
       },
@@ -135,7 +171,6 @@ export const initiatePayment = async (req, res) => {
           unit_price: amountInPaisa,
         },
       ],
-      // merchant_ prefix fields are returned in callback — useful for tracking
       merchant_booking_id: booking._id.toString(),
     };
 
@@ -170,7 +205,6 @@ export const initiatePayment = async (req, res) => {
       expires_at,
     });
   } catch (error) {
-    // Surface Khalti's own validation errors
     if (error.response?.data) {
       return res.status(400).json({
         message: "Khalti payment initiation failed.",
@@ -184,26 +218,21 @@ export const initiatePayment = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // @desc    Khalti callback after user pays
-//          Khalti redirects user to this GET URL
-// @route   GET /api/payments/callback
-// @access  Public (Khalti redirects here)
+//          Khalti redirects user's browser to this GET URL
+// @route   GET /api/v1/payments/callback
+// @access  Public (Khalti redirects here — no JWT)
 // ─────────────────────────────────────────────
 export const khaltiCallback = async (req, res) => {
   try {
-    // Khalti sends these as query params on the return_url
-    const {
-      pidx,
-      status,
-      transaction_id,
-      amount,
-      purchase_order_id,
-    } = req.query;
+    const { pidx, transaction_id } = req.query;
 
     if (!pidx) {
-      return res.status(400).json({ message: "pidx is required." });
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment/failed?reason=missing_pidx`
+      );
     }
 
-    // Always verify via Khalti lookup — never trust callback alone
+    // Always verify via Khalti lookup — never trust callback params alone
     const lookupRes = await axios.post(
       `${KHALTI_BASE_URL}/epayment/lookup/`,
       { pidx },
@@ -216,52 +245,77 @@ export const khaltiCallback = async (req, res) => {
     // Find the payment by pidx
     const payment = await Payment.findOne({ pidx });
     if (!payment) {
-      return res.status(404).json({ message: "Payment record not found." });
+      console.error(`khaltiCallback: no Payment found for pidx=${pidx}`);
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment/failed?reason=payment_not_found`
+      );
     }
 
-    // Update payment with verified data
+    // Update payment with verified data from Khalti
     payment.status = ourStatus;
-    payment.khalti_transaction_id =
-      lookup.transaction_id ?? transaction_id ?? null;
+    payment.khalti_transaction_id = lookup.transaction_id ?? transaction_id ?? null;
     payment.khalti_response = lookup;
     await payment.save();
 
-    // Update booking payment_status to stay in sync
+    // Sync booking
     const booking = await Booking.findById(payment.booking);
-    if (booking) {
-      booking.payment_status = mapToBookingPaymentStatus(ourStatus);
 
-      // Auto-confirm booking on successful payment
-      if (ourStatus === "completed" && booking.status === "pending") {
-        booking.status = "confirmed";
-      }
-
-      await booking.save();
+    // FIX 3 — Previously this was a silent `if (booking) { ... }` which
+    // meant a completed payment with a missing booking produced no error,
+    // no log, and left the data in an undetectable broken state.
+    // Now we log clearly so it shows up for manual reconciliation.
+    if (!booking) {
+      console.error(
+        `khaltiCallback: Payment ${payment._id} marked ${ourStatus} but ` +
+        `Booking ${payment.booking} does not exist. Manual reconciliation needed.`
+      );
+      // Payment went through on Khalti's side — redirect to success so
+      // the user isn't confused. Admin resolves the booking side manually.
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment/success?bookingId=${payment.booking}`
+      );
     }
 
-    // Redirect user to frontend with result
-    const frontendBase = process.env.FRONTEND_URL;
+    booking.payment_status = mapToBookingPaymentStatus(ourStatus);
 
     if (ourStatus === "completed") {
+      // Auto-confirm booking on successful payment
+      if (booking.status === "pending") {
+        booking.status = "confirmed";
+      }
+    } else if (isTerminalPaymentStatus(ourStatus)) {
+      // FIX 2 — When payment is terminal (user_canceled, expired, failed),
+      // clear the booking's payment ref and reset payment_status to "pending".
+      // Without this, the duplicate check in initiatePayment finds the dead
+      // payment and permanently blocks the user from retrying — they'd be
+      // stuck with an unpaid booking they can never pay for.
+      booking.payment = null;
+      booking.payment_status = "pending";
+      // booking.status intentionally stays "pending" — user can try again
+    }
+
+    await booking.save();
+
+    const frontendBase = process.env.FRONTEND_URL;
+    if (ourStatus === "completed") {
       return res.redirect(
-        `${frontendBase}/payment/success?bookingId=${payment.booking}`
+        `${frontendBase}/payment/success?bookingId=${booking._id}`
       );
     } else {
       return res.redirect(
-        `${frontendBase}/payment/failed?bookingId=${payment.booking}&reason=${ourStatus}`
+        `${frontendBase}/payment/failed?bookingId=${booking._id}&reason=${ourStatus}`
       );
     }
   } catch (error) {
     console.error("khaltiCallback error:", error);
-    // Redirect to a generic failure page rather than exposing errors
     return res.redirect(`${process.env.FRONTEND_URL}/payment/failed`);
   }
 };
 
 // ─────────────────────────────────────────────
-// @desc    Manually verify/lookup a payment by pidx
-//          Use this if callback was missed or user claims payment was made
-// @route   POST /api/payments/verify
+// @desc    Manually verify a payment by pidx
+//          Use when callback was missed or user claims payment was made
+// @route   POST /api/v1/payments/verify
 // @access  Private (user or admin)
 // ─────────────────────────────────────────────
 export const verifyPayment = async (req, res) => {
@@ -272,7 +326,6 @@ export const verifyPayment = async (req, res) => {
       return res.status(400).json({ message: "pidx is required." });
     }
 
-    // Find our payment record
     const payment = await Payment.findOne({ pidx });
     if (!payment) {
       return res.status(404).json({ message: "Payment record not found." });
@@ -300,7 +353,7 @@ export const verifyPayment = async (req, res) => {
     const paidAmountNPR = lookup.total_amount / 100;
     if (
       ourStatus === "completed" &&
-      Math.abs(paidAmountNPR - payment.amount) > 1 // allow 1 NPR rounding tolerance
+      Math.abs(paidAmountNPR - payment.amount) > 1 // 1 NPR rounding tolerance
     ) {
       payment.status = "failed";
       payment.khalti_response = lookup;
@@ -319,17 +372,36 @@ export const verifyPayment = async (req, res) => {
     payment.khalti_response = lookup;
     await payment.save();
 
-    // Sync booking payment_status
+    // Sync booking
     const booking = await Booking.findById(payment.booking);
-    if (booking) {
-      booking.payment_status = mapToBookingPaymentStatus(ourStatus);
 
-      if (ourStatus === "completed" && booking.status === "pending") {
+    // FIX 3 — Same clear error logging as khaltiCallback.
+    // Previously silently continued if booking was null.
+    if (!booking) {
+      console.error(
+        `verifyPayment: Payment ${payment._id} verified as ${ourStatus} but ` +
+        `Booking ${payment.booking} does not exist. Manual reconciliation needed.`
+      );
+      return res.status(200).json({
+        message: "Payment verified but linked booking not found. Contact support.",
+        status: ourStatus,
+        payment,
+      });
+    }
+
+    booking.payment_status = mapToBookingPaymentStatus(ourStatus);
+
+    if (ourStatus === "completed") {
+      if (booking.status === "pending") {
         booking.status = "confirmed";
       }
-
-      await booking.save();
+    } else if (isTerminalPaymentStatus(ourStatus)) {
+      // FIX 2 — Same retry logic as khaltiCallback.
+      booking.payment = null;
+      booking.payment_status = "pending";
     }
+
+    await booking.save();
 
     return res.status(200).json({
       message: "Payment verified.",
@@ -337,6 +409,7 @@ export const verifyPayment = async (req, res) => {
       khalti_status: lookup.status,
       transaction_id: lookup.transaction_id,
       amount: paidAmountNPR,
+      booking_status: booking.status,
       payment,
     });
   } catch (error) {
@@ -353,14 +426,17 @@ export const verifyPayment = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // @desc    Get payment details by booking ID
-// @route   GET /api/payments/booking/:bookingId
+// @route   GET /api/v1/payments/booking/:bookingId
 // @access  Private (owner or admin)
 // ─────────────────────────────────────────────
 export const getPaymentByBooking = async (req, res) => {
   try {
     const payment = await Payment.findOne({
       booking: req.params.bookingId,
-    }).populate("booking", "status payment_status total_rent_amount");
+    }).populate(
+      "booking",
+      "status payment_status total_rent_amount pickup_datetime dropoff_datetime"
+    );
 
     if (!payment) {
       return res.status(404).json({ message: "Payment not found." });
@@ -382,7 +458,7 @@ export const getPaymentByBooking = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // @desc    Get all payments (admin only)
-// @route   GET /api/payments
+// @route   GET /api/v1/payments
 // @access  Private (admin)
 // ─────────────────────────────────────────────
 export const getAllPayments = async (req, res) => {
@@ -397,7 +473,10 @@ export const getAllPayments = async (req, res) => {
     const [payments, total] = await Promise.all([
       Payment.find(filter)
         .populate("user", "name email phone")
-        .populate("booking", "status total_rent_amount pickup_datetime dropoff_datetime")
+        .populate(
+          "booking",
+          "status total_rent_amount pickup_datetime dropoff_datetime"
+        )
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(Number(limit)),

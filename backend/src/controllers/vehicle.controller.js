@@ -4,7 +4,75 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Vehicle } from "../models/vehicle.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { getRecommendations } from '../services/recommendationService.js';
 import mongoose from "mongoose";
+
+// Function to add vehicle to cookie for recommendation
+const addToRecentlyViewed = (req, res, next) => {
+  const vehicleId = String(req.params.id);
+
+  let recentViewed = [];
+  try {
+    const parsed = req.cookies.recentViewed
+      ? JSON.parse(req.cookies.recentViewed)
+      : [];
+    recentViewed = Array.isArray(parsed) ? parsed : [];
+  } catch {
+    recentViewed = [];
+  }
+
+  recentViewed = recentViewed.filter(id => id !== vehicleId);
+  recentViewed.unshift(vehicleId);
+  recentViewed = recentViewed.slice(0, 5);
+
+  res.cookie('recentViewed', JSON.stringify(recentViewed), {
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  });
+
+  next();
+};
+
+
+
+export const getRecommendedVehicles = async (req, res) => {
+  try {
+    let recentIds = [];
+    try {
+      const parsed = req.cookies.recentViewed
+        ? JSON.parse(req.cookies.recentViewed)
+        : [];
+      recentIds = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      recentIds = [];
+    }
+
+    const availableVehicles = await Vehicle.find({ status: 'available' });
+
+    // Fallback: no history → return 6 available vehicles
+    if (recentIds.length === 0) {
+      const fallback = availableVehicles
+        .slice(0, 6)
+        .map(v => v.toObject());
+      return res.json({ recommendations: fallback, basedOn: 'popular' });
+    }
+
+    const recommendations = getRecommendations(recentIds, availableVehicles);
+
+    res.json({
+      recommendations,
+      basedOn:     'recentlyViewed',
+      viewedCount: recentIds.length,
+    });
+
+  } catch (err) {
+    console.error('Recommendation error:', err);
+    res.status(500).json({ message: 'Could not fetch recommendations' });
+  }
+};
+
 // ────────────────────────────────────────────────
 // 1. CREATE VEHICLE (usually restricted to admin/manager)
 // ────────────────────────────────────────────────
@@ -386,6 +454,7 @@ const deleteVehicle = asyncHandler(async (req, res) => {
 });
 
 export {
+  addToRecentlyViewed,
   registerVehicle,
   getAllVehicles,
   getVehicleById,
