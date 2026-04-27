@@ -364,72 +364,63 @@ const getVehicleById = asyncHandler(async (req, res) => {
 // ────────────────────────────────────────────────
 const updateVehicle = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  console.log(id)
 
-  // 1. Early validation of ID (prevents unnecessary DB calls)
   if (!id || !mongoose.isValidObjectId(id)) {
     throw new ApiError(400, "Invalid or missing vehicle ID");
   }
 
-  // Optional: you can restrict which fields can be updated
+  // ✅ Find vehicle FIRST before updating
+  const vehicle = await Vehicle.findById(id);
+
+  if (!vehicle) {
+    throw new ApiError(404, "Vehicle not found");
+  }
+
+  // ✅ Auth check BEFORE update (was after before — bug fixed)
+  if (vehicle.registeredBy?.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, "You are not authorized to update this vehicle");
+  }
+
   const allowedUpdates = [
-    "model",
-    "brand",
-    "status", 
-    "daily_rate",
-    "hourly_rate",
-    "image_url",
-    "location",
-    "last_maintenance",
-    "battery_range",
+    "model", "brand", "status", "daily_rate",
+    "hourly_rate", "image_url", "location",
+    "last_maintenance", "battery_range",
   ];
 
   const updates = {};
-// Handle image
-if (req.files?.image_url?.[0]?.path) {
-  const imageLocalPath = req.files.image_url[0].path;
 
-  // delete old
-  if (Vehicle?.image_url) {
-    const oldPublicId = extractPublicIdFromUrl(vehicle.image_url);
-    if (oldPublicId) await deleteFromCloudinary(oldPublicId).catch(console.error);
-  }
-
-  const uploaded = await uploadOnCloudinary(imageLocalPath);
-  if (uploaded?.url) {
-    updates.image_url = uploaded.url;
-  }
-
+  // ✅ Fixed: extract body fields OUTSIDE the image if-block (was inside before — bug fixed)
   for (const key of Object.keys(req.body)) {
     if (allowedUpdates.includes(key)) {
       updates[key] = req.body[key];
     }
   }
-}
+
+  // Handle new image upload
+  if (req.files?.image_url?.[0]?.path) {
+    const imageLocalPath = req.files.image_url[0].path;
+
+    // Delete old image from Cloudinary
+    if (vehicle.image_url) {
+      const oldPublicId = extractPublicIdFromUrl(vehicle.image_url);
+      if (oldPublicId) await deleteFromCloudinary(oldPublicId).catch(console.error);
+    }
+
+    const uploaded = await uploadOnCloudinary(imageLocalPath);
+    if (uploaded?.url) {
+      updates.image_url = uploaded.url;
+    }
+  }
 
   if (Object.keys(updates).length === 0) {
     throw new ApiError(400, "No valid fields to update");
   }
 
- const updatedVehicle = await Vehicle.findByIdAndUpdate(
+  const updatedVehicle = await Vehicle.findByIdAndUpdate(
     id,
-    { $set: updates },           // ← explicit $set (safer & more readable)
-    {
-      new: true,                 // return the updated document
-      runValidators: true,       // enforce schema validators (very important!)
-      timestamps: true       // if your schema uses timestamps → auto-updates them
-      // context: 'query'        // needed for some custom validators (rare)
-    }
-  );  
-
-  if (!updatedVehicle) {
-    throw new ApiError(404, "Vehicle not found");
-  }
-
-   // Assuming you have req.user from auth middleware (JWT)
-if (updatedVehicle.registeredBy?.toString() !== req.user._id.toString()) {
-  throw new ApiError(403, "You are not authorized to update this vehicle");
-}
+    { $set: updates },
+    { new: true, runValidators: true }
+  );
 
   return res
     .status(200)
