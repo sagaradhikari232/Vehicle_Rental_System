@@ -1,6 +1,7 @@
 import { Booking } from "../models/booking.model.js";
 import { Vehicle } from "../models/vehicle.model.js";
 import { Payment } from "../models/payment.model.js";
+import mongoose from "mongoose";
 
 // ─────────────────────────────────────────────
 // HELPERS
@@ -75,7 +76,6 @@ export const createBooking = async (req, res) => {
       dropoff_location,
       notes,
     } = req.body;
-    console.log(vehicle,pickup_datetime, dropoff_datetime)
 
     const userId = req.user._id;
 
@@ -98,7 +98,7 @@ export const createBooking = async (req, res) => {
       return res.status(400).json({ message: "Notes cannot exceed 1000 characters." });
     }
 
-    // 3. Check vehicle exists and is rentable
+    // 3. Check vehicle exists and is currently available
     const vehicleDoc = await Vehicle.findById(vehicle);
     if (!vehicleDoc) {
       return res.status(404).json({ message: "Vehicle not found." });
@@ -115,34 +115,58 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // 5. Calculate rent (smart: daily vs hourly)
+    // 5. Calculate rent
     const { total_rent_amount } = calculateRent(vehicleDoc, pickup, dropoff);
 
-    // 6. Create booking
-    // Status starts as "pending" — moves to "confirmed" automatically
-    // once Khalti payment completes (via khaltiCallback or verifyPayment).
-    const booking = await Booking.create({
-      user: userId,
-      vehicle,
-      pickup_datetime: pickup,
-      dropoff_datetime: dropoff,
-      pickup_location,
-      dropoff_location,
-      total_rent_amount,
-      security_deposit: 0,
-      notes,
-      status: "pending",
-      payment_status: "pending",
-    });
+    // === IMPORTANT: Use Transaction for Safety ===
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    // 7. Return booking — frontend immediately calls POST /api/v1/payments/initiate/:bookingId
-    return res.status(201).json({
-      message: "Booking created. Proceed to payment.",
-      booking,
-    });
+    try {
+      // 6. Create the booking (status = pending until payment)
+      const booking = await Booking.create([{
+        user: userId,
+        vehicle,
+        pickup_datetime: pickup,
+        dropoff_datetime: dropoff,
+        pickup_location,
+        dropoff_location,
+        total_rent_amount,
+        security_deposit: 0,
+        notes,
+        status: "pending",
+        payment_status: "pending",
+      }], { session });
+
+      // 7. Update vehicle status to "booked"
+      await Vehicle.findByIdAndUpdate(
+        vehicle,
+        { status: "booked" },
+        { session }
+      );
+
+      await session.commitTransaction();
+
+      console.log(`✅ Booking created & Vehicle ${vehicle} status changed to "booked"`);
+
+      return res.status(201).json({
+        message: "Booking created successfully. Proceed to payment.",
+        booking: booking[0],   // since we used array with transaction
+      });
+
+    } catch (transactionError) {
+      await session.abortTransaction();
+      console.error("Transaction error:", transactionError);
+      throw transactionError;
+    } finally {
+      session.endSession();
+    }
+
   } catch (error) {
     console.error("createBooking error:", error);
-    return res.status(500).json({ message: "Internal server error." });
+    return res.status(500).json({ 
+      message: "Internal server error while creating booking." 
+    });
   }
 };
 
