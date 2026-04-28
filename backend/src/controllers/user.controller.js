@@ -427,6 +427,80 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   
 });
 
+const getAllUsers = asyncHandler(async (req, res) => {
+  const { search = '', role = '', status= '',  page = 1, limit = 10 } = req.query;
+
+  const query = {};
+
+  // Search by username, fullname, or email
+  if (search) {
+    query.$or = [
+      { username: { $regex: search, $options: 'i' } },
+      { fullname: { $regex: search, $options: 'i' } },
+      { email:    { $regex: search, $options: 'i' } },
+    ];
+  }
+
+  // Filter by role if provided
+  if (role && ['customer', 'admin', 'owner'].includes(role)) {
+    query.role = role;
+  }
+
+  if (status && ['active', 'restricted'].includes(status)) {
+    query.status = status;
+  }
+  
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const [users, total] = await Promise.all([
+    User.find(query)
+      .select('-password -refreshToken')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit)),
+    User.countDocuments(query),
+  ]);
+
+  return res.status(200).json(
+    new ApiResponse(200, { users, total, page: Number(page), limit: Number(limit) }, 'Users fetched successfully')
+  );
+});
+
+const toggleUserStatus = asyncHandler(async (req, res) => {
+  // Only admin can do this
+  if (req.user.role !== 'admin') {
+    throw new ApiError(403, 'Access denied. Admins only.');
+  }
+ 
+  const { userId } = req.params;
+ 
+  // Find the user
+  const user = await User.findById(userId).select('-password -refreshToken');
+ 
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+ 
+  // Prevent admin from restricting another admin or themselves
+  if (user.role === 'admin') {
+    throw new ApiError(403, 'Cannot restrict another admin account');
+  }
+ 
+  if (user._id.toString() === req.user._id.toString()) {
+    throw new ApiError(403, 'You cannot restrict your own account');
+  }
+ 
+  // Toggle: active → restricted, restricted → active
+  user.status = user.status === 'active' ? 'restricted' : 'active';
+  await user.save({ validateBeforeSave: false });
+ 
+  const action = user.status === 'restricted' ? 'restricted' : 'reactivated';
+ 
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, `User ${action} successfully`));
+});
+ 
 
 export {
   registerUser,
@@ -437,4 +511,6 @@ export {
   getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
+  getAllUsers,
+  toggleUserStatus
 };

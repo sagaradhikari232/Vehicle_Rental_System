@@ -89,7 +89,12 @@ address: {
     },
   },
 
-
+  status: {
+  type: String,
+  enum: ['active', 'restricted'],
+  default: 'active',
+},
+  
   license_number: {
     type: String,
     trim: true,

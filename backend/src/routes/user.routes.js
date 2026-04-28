@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { registerUser, loginUser, logoutUser, refreshAccessToken, changeCurrentPassword, getCurrentUser, updateAccountDetails, updateUserAvatar} from "../controllers/user.controller.js";
+import { registerUser, loginUser, logoutUser, refreshAccessToken, changeCurrentPassword, getCurrentUser, updateAccountDetails, updateUserAvatar, getAllUsers, toggleUserStatus} from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { isAdmin } from "../middlewares/admin.middleware.js";
 
 const router = Router();
 
@@ -30,5 +31,8 @@ router.route("/update-account").patch(verifyJWT, updateAccountDetails)
 
 router.route("/avatar").patch(verifyJWT, upload.single("avatar"), updateUserAvatar) 
 
+router.route("/all").get(verifyJWT,isAdmin, getAllUsers)
+
+router.route("/:userId/status").patch(verifyJWT, toggleUserStatus);
 
 export default router;

@@ -11,6 +11,9 @@ import ForgotPassword from './components/sections/ForgetPassword';
 import DashboardLayout from './components/admin/DashboardLayout';
 import Dashboard from './components/pages/admin/Dashboard';
 import Vehicles from './components/pages/admin/Vehicles';
+import Bookings from './components/pages/admin/Bookings';
+import Users from './components/pages/admin/Users';
+
 
 // --- Senior Tip: Scroll to Top on Route Change ---
 // Without this, if you scroll to the footer on home and click 'Login', 
@@ -43,10 +46,8 @@ export default function App() {
           {/* index means this renders when the path is exactly '/admin' */}
           <Route index element={<Dashboard />} /> 
           <Route path="vehicles" element={<Vehicles />} /> 
-          
-          {/* Placeholder for future expansion */}
-          <Route path="bookings" element={<div className="p-8">Bookings Coming Soon</div>} />
-          <Route path="users" element={<div className="p-8">User Management Coming Soon</div>} />
+          <Route path="bookings" element={<Bookings />} />
+          <Route path="users" element={<Users />} />
         </Route>
 
         {/* --- 404 Redirect --- */}

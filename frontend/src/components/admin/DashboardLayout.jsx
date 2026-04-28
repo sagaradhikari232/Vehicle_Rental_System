@@ -114,16 +114,6 @@ const DashboardLayout = () => {
           </div>
 
           <div className="flex items-center gap-3 md:gap-6">
-            {/* Search Bar */}
-            <div className="relative hidden md:flex items-center">
-              <Search className="absolute left-3 text-slate-400" size={16} />
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                className="pl-10 pr-12 py-2 bg-slate-100/50 dark:bg-slate-800/50 border-transparent rounded-xl focus:bg-white dark:focus:bg-slate-800 w-48 focus:w-64 transition-all outline-none text-sm"
-              />
-            </div>
-
             {/* Theme Toggle */}
             <button 
               onClick={() => setIsDarkMode(!isDarkMode)}
@@ -132,18 +122,13 @@ const DashboardLayout = () => {
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
 
-            <button className="relative p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all">
-              <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 border-2 border-white dark:border-slate-900 rounded-full" />
-            </button>
-
             {/* User Profile */}
             <div className="flex items-center gap-3 pl-4 border-l border-slate-100 dark:border-slate-800 group cursor-pointer">
               <div className="hidden text-right md:block">
-                <p className="text-sm font-bold dark:text-slate-200">John Doe</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Admin</p>
+                <p className="text-sm font-bold dark:text-slate-200">MRS</p>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Admin</p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center text-amber-950 font-black">JD</div>
+              <div className="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center text-amber-950 font-black">MRS</div>
             </div>
           </div>
         </header>
