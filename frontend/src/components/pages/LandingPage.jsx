@@ -6,8 +6,8 @@ import Footer from '../layout/Footer';
 
 // Section Components
 import Hero from '../sections/Hero';
-import BikeCategories from '../sections/BikeCategories';
-import PopularBikes from '../sections/PopularBikes';
+import VehicleCategories from '../sections/VehicleCategories';
+import PopularVehicle from '../sections/PopularVehicle';
 import Testimonials from '../sections/Testimonials';
 
 const LandingPage = () => {
@@ -16,8 +16,8 @@ const LandingPage = () => {
       <Navbar />
       <main>
         <Hero />
-        <BikeCategories />
-        <PopularBikes />
+        <VehicleCategories />
+        <PopularVehicle />
         <Testimonials />
       </main>
       <Footer />

@@ -103,6 +103,7 @@ const registerVehicle = asyncHandler(async (req, res) => {
     image_url,
     status,
     location,
+    mileage,
     battery_range,
     last_maintenance,
     registeredBy,
@@ -261,6 +262,7 @@ const createRangeFilter = (min, max, fieldName) => {
 
   return Object.keys(range).length > 0 ? range : null;
 };
+
 
 const getAllVehicles = asyncHandler(async (req, res) => {
   const {

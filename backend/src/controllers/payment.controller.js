@@ -149,8 +149,8 @@ export const initiatePayment = async (req, res) => {
       // Original code had /api/payments/callback which 404s on your server.
       // Khalti completes the payment but your callback never fires —
       // booking stays pending forever and user sees a broken page.
-      return_url: `${process.env.WEBSITE_URL}/api/v1/payments/callback`,
-      website_url: process.env.WEBSITE_URL,
+      return_url: `${process.env.FRONTEND_URL}/api/v1/payments/callback`,
+      website_url: process.env.FRONTEND_URL,
       amount: amountInPaisa,
       purchase_order_id: booking._id.toString(),
       purchase_order_name: `Vehicle Rental - Booking #${booking._id}`,

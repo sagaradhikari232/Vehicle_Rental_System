@@ -82,9 +82,17 @@ const vehicleSchema = new Schema({
     maxlength: [255],
   },
 
+  mileage:{
+    type: Number,
+    trim: true,
+    max: [60, 'Mileage is too high'],
+    min: [10, 'Mileage is too low']
+  },
+
   battery_range: {
     type: Number,
-    min: [0],
+    min: [30, 'Battery range is too low'],
+    max: [300, 'Battery range is too high']
   },
 
   last_maintenance: {

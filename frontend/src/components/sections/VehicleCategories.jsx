@@ -21,7 +21,7 @@ const SectionHeader = () => (
   </div>
 );
 
-export default function BikeCategories() {
+export default function VehicleCategories() {
   const [hoveredId, setHoveredId] = useState(null);
 
   return (
