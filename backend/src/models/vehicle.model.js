@@ -112,4 +112,3 @@ const vehicleSchema = new Schema({
 
 
 export const Vehicle = mongoose.model('Vehicle', vehicleSchema);
-
