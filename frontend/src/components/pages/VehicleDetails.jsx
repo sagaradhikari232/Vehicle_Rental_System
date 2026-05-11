@@ -358,11 +358,7 @@ export default function VehicleDetail() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <SpecsGrid vehicle={vehicle} />
             </div>
-
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">About This Vehicle</h2>
-              <p className="text-gray-600 leading-relaxed text-base">{vehicle.description}</p>
-            </div>
+            
           </div>
 
           <aside className="lg:col-span-1">
