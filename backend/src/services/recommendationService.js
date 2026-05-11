@@ -11,15 +11,22 @@ function cosineSimilarity(a, b) {
   return denom === 0 ? 0 : dot / denom;
 }
 
-export function getRecommendations(recentIds, allVehicles, topN = 6) {
+export function getRecommendations(recentIds, allVehicles, topN = 3) {
   const viewedSet      = new Set(recentIds.map(String));
+  // console.log("log from viewedset", viewedSet)
   const viewedVehicles = allVehicles.filter(v => viewedSet.has(String(v._id)));
+  // console.log("log from viewedvehicles", viewedVehicles)
 
-  if (viewedVehicles.length === 0) return [];
+  const length = Object.keys(viewedVehicles).length; 
+  console.log(viewedVehicles.length)
+  // if (viewedVehicles.length == 0) return [];
 
   // Build weighted profile vector (recent = higher weight)
-  const dims          = toVector(viewedVehicles[0]).length;
+  const dims     = toVector(viewedVehicles[0]).length;
+  let dim0    = toVector(viewedVehicles[0]);
+  // console.log("log from dim0", dim0)
   const profileVector = new Array(dims).fill(0);
+  // console.log("log from profileVector", profileVector)
   let   totalWeight   = 0;
 
   viewedVehicles.forEach(v => {
@@ -35,6 +42,7 @@ export function getRecommendations(recentIds, allVehicles, topN = 6) {
 
   // Score unseen candidates
   const candidates = allVehicles.filter(v => !viewedSet.has(String(v._id)));
+  // console.log("log from candidates", candidates) 
 
   return candidates
     .map(vehicle => {

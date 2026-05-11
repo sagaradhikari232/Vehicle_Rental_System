@@ -36,8 +36,7 @@ const addToRecentlyViewed = (req, res, next) => {
 };
 
 
-
-export const getRecommendedVehicles = async (req, res) => {
+const getRecommendedVehicles = async (req, res) => {
   try {
     let recentIds = [];
     try {
@@ -49,23 +48,19 @@ export const getRecommendedVehicles = async (req, res) => {
       recentIds = [];
     }
 
-    const availableVehicles = await Vehicle.find({ status: 'available' });
+    // console.log('recentIds from cookie:', recentIds); // 👈 check this
 
-    // Fallback: no history → return 6 available vehicles
+    const availableVehicles = await Vehicle.find({ status: 'available' });
+    // console.log('available vehicles are', availableVehicles)
+
     if (recentIds.length === 0) {
-      const fallback = availableVehicles
-        .slice(0, 6)
-        .map(v => v.toObject());
+      const fallback = availableVehicles.slice(0, 6).map(v => v.toObject());
       return res.json({ recommendations: fallback, basedOn: 'popular' });
     }
 
     const recommendations = getRecommendations(recentIds, availableVehicles);
-
-    res.json({
-      recommendations,
-      basedOn:     'recentlyViewed',
-      viewedCount: recentIds.length,
-    });
+    console.log("log from recommnedatoins", recommendations)
+    res.json({ recommendations, basedOn: 'recentlyViewed', viewedCount: recentIds.length });
 
   } catch (err) {
     console.error('Recommendation error:', err);
@@ -453,4 +448,5 @@ export {
   getVehicleById,
   updateVehicle,
   deleteVehicle,
+  getRecommendedVehicles
 };

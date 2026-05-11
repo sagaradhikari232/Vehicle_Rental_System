@@ -4,9 +4,11 @@ import AuthLayout from '../layout/AuthLayout';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import api from '../../utils/api';
+import { useAuth } from '../../context/AuthContext'; // ← adjust path if needed
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth(); // ← get login from context
   const [formData, setFormData] = useState({ email: '', password: '', remember: false });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -14,7 +16,6 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // --- Client-side validation ---
     const newErrors = {};
     if (!formData.email) newErrors.email = 'Email is required';
     if (!formData.password) newErrors.password = 'Password is required';
@@ -32,11 +33,9 @@ export default function Login() {
 
       const { user, accessToken } = res.data.data;
 
-      // Store token and user info in localStorage
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('user', JSON.stringify(user));
+      // ✅ This updates AuthContext AND localStorage in one call
+      login(user, accessToken);
 
-      // Redirect based on role
       if (user.role === 'admin' || user.role === 'owner') {
         navigate('/admin');
       } else {
@@ -57,7 +56,6 @@ export default function Login() {
       onLogoClick={() => navigate('/')}
     >
       <form onSubmit={handleSubmit}>
-        {/* Server error */}
         {errors.server && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
             {errors.server}
