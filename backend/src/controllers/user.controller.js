@@ -338,7 +338,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { fullName, email,phone} = req.body;
-
+  console.log(req.body)
     let { address: addressBody } = req.body; // extract the nested address object
 
 let address = {};
@@ -369,7 +369,7 @@ if (addressBody && Object.keys(addressBody).length > 0) {
     userId,
     {
       $set: {
-        fullName,
+        fullname: fullName,
         email,
         phone,
         address

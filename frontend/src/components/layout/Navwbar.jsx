@@ -1,17 +1,6 @@
-/**
- * Navbar.jsx
- * src/components/layout/Navbar.jsx
- *
- * Changes from previous version:
- * - onNavigate passed to UserMenuDropdown (was missing — caused all menu items to do nothing)
- * - handleNavigate helper: navigate(path) + close mobile menu
- * - Mobile menu reads user.fullname (correct backend field)
- * - Mobile menu "My Profile" → /account
- * - Removed dead /settings route
- */
-import { useState } from 'react'; 
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Menu, X, Bike, LogOut, User } from 'lucide-react';
+import { Menu, X, Bike, LogOut, User, Settings } from 'lucide-react';
 import Button from '../common/Button';
 import UserMenuDropdown from '../common/UserMenuDro45pDown';
 import { useScrollPosition } from '../../hooks/useScrollPosition';
@@ -19,16 +8,16 @@ import { smoothScrollToElement } from '../../utils/smoothScroll';
 import { useAuth } from '../../context/AuthContext';
 
 const NAV_LINKS = [
-  { name: 'Home',       href: '#home'       },
+  { name: 'Home', href: '#home' },
   { name: 'Categories', href: '#categories' },
-  { name: 'Bikes',      href: '#bikes'      },
-  { name: 'Contact Us', href: '#contact'    },
+  { name: 'Bikes', href: '#bikes' },
+  { name: 'Contact Us', href: '#contact' },
 ];
 
 export default function Navbar() {
-  const [isOpen,    setIsOpen]    = useState(false);
-  const isScrolled  = useScrollPosition();
-  const navigate    = useNavigate();
+  const [isOpen, setIsOpen] = useState(false);
+  const isScrolled = useScrollPosition();
+  const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
 
   const handleLogout = () => {
@@ -44,12 +33,6 @@ export default function Navbar() {
     } else {
       smoothScrollToElement(href);
     }
-    setIsOpen(false);
-  };
-
-  // Single helper for all navigate actions — closes mobile menu too
-  const handleNavigate = (path) => {
-    navigate(path);
     setIsOpen(false);
   };
 
@@ -82,7 +65,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop nav links */}
+          {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center gap-8">
             {NAV_LINKS.map((link) => (
               <button
@@ -95,16 +78,10 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Desktop auth */}
+          {/* Desktop Auth Section */}
           <div className="hidden md:flex items-center gap-3">
             {isAuthenticated ? (
-              <UserMenuDropdown
-                user={user}
-                onLogout={handleLogout}
-                onNavigate={handleNavigate}
-                isScrolled={isScrolled}
-                bookingCount={0}
-              />
+              <UserMenuDropdown onLogout={handleLogout} user={user} isScrolled={isScrolled} />
             ) : (
               <>
                 <button
@@ -123,7 +100,7 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile toggle */}
+          {/* Mobile Toggle */}
           <button
             className={`md:hidden p-1 rounded-lg transition-colors ${
               isScrolled ? 'text-gray-900 hover:bg-gray-100' : 'text-white hover:bg-white/10'
@@ -135,11 +112,12 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Mobile menu */}
+        {/* Mobile Menu */}
         {isOpen && (
           <div className="md:hidden mt-4 pb-4 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4">
             <div className="flex flex-col space-y-1">
 
+              {/* Nav Links */}
               {NAV_LINKS.map((link) => (
                 <button
                   key={link.name}
@@ -150,16 +128,17 @@ export default function Navbar() {
                 </button>
               ))}
 
+              {/* Auth Section */}
               <div className="pt-4 border-t border-gray-100 flex flex-col gap-2 mt-2">
                 {isAuthenticated ? (
                   <>
-                    {/* User info — reads user.fullname (correct backend field) */}
-                    <div className="flex items-center gap-3 px-4 py-3 bg-orange-50 rounded-xl">
+                    {/* User info row */}
+                    <div className="flex items-center gap-3 px-4 py-3 bg-orange-50 rounded-lg">
                       <div className="w-9 h-9 rounded-full bg-orange-200 flex items-center justify-center overflow-hidden shrink-0">
                         {user?.avatar ? (
                           <img
                             src={user.avatar}
-                            alt={user.fullname ?? 'User'}
+                            alt={user.fullname}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -168,20 +147,29 @@ export default function Navbar() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-gray-900 truncate">
-                          {user?.fullname ?? user?.username ?? 'User'}
+                          {user?.fullname || 'User'}
                         </p>
                         <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                       </div>
                     </div>
 
+                    {/* Profile & Settings links */}
                     <button
-                      onClick={() => handleNavigate('/account')}
+                      onClick={() => { navigate('/profile'); setIsOpen(false); }}
                       className="flex items-center gap-3 text-gray-700 font-medium hover:text-orange-600 hover:bg-orange-50 px-4 py-3 rounded-lg text-left transition-colors"
                     >
                       <User size={17} />
-                      My Account
+                      My Profile
+                    </button>
+                    <button
+                      onClick={() => { navigate('/settings'); setIsOpen(false); }}
+                      className="flex items-center gap-3 text-gray-700 font-medium hover:text-orange-600 hover:bg-orange-50 px-4 py-3 rounded-lg text-left transition-colors"
+                    >
+                      <Settings size={17} />
+                      Settings
                     </button>
 
+                    {/* Logout */}
                     <button
                       onClick={handleLogout}
                       className="flex items-center gap-3 text-red-600 font-medium hover:bg-red-50 px-4 py-3 rounded-lg text-left transition-colors mt-1"
@@ -193,14 +181,14 @@ export default function Navbar() {
                 ) : (
                   <>
                     <Button
-                      onClick={() => handleNavigate('/login')}
+                      onClick={() => { navigate('/login'); setIsOpen(false); }}
                       variant="outline"
                       className="w-full border border-gray-300 text-gray-700 hover:bg-gray-50"
                     >
                       Log in
                     </Button>
                     <Button
-                      onClick={() => handleNavigate('/signup')}
+                      onClick={() => { navigate('/signup'); setIsOpen(false); }}
                       className="bg-orange-500 hover:bg-orange-600 text-white w-full"
                     >
                       Sign Up
@@ -209,7 +197,7 @@ export default function Navbar() {
                 )}
               </div>
             </div>
-          </div>  
+          </div>
         )}
       </div>
     </nav>
