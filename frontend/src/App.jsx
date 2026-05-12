@@ -11,6 +11,7 @@ import Signup from './components/sections/Signup';
 import ForgotPassword from './components/sections/ForgetPassword';
 import PaymentSuccess from './components/pages/Paymentsuccess';
 import PaymentFailed from './components/pages/Paymentfailed';
+import FavouritesPage from './components/pages/FavouritesPage';
 
 // Admin Components
 import DashboardLayout from './components/admin/DashboardLayout';
@@ -61,6 +62,7 @@ export default function App() {
             The components will now use the useNavigate() hook internally. */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/favourites" element={<FavouritesPage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/payment/success" element={<PaymentSuccess />} />
         <Route path="/payment/failed" element={<PaymentFailed />} />  

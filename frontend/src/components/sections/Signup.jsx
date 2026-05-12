@@ -4,6 +4,8 @@ import AuthLayout from '../layout/AuthLayout';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import api from '../../utils/api';
+// No login() call here since signup redirects to /login for the user to sign in manually.
+// If your backend returns a token on register too, you can import useAuth and call login() just like Login.jsx.
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -12,21 +14,21 @@ export default function Signup() {
   const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
-    username: 'mohan',
-    fullname: 'Mohan Rana',
-    email: 'ranamohan@gmail.com',
-    phone: '9811563780',
-    password: 'ranamohan123',
-    confirmPassword: 'ranamohan123',
+    username: '',
+    fullname: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
     avatar: null,
     address: {
       province: 'Lumbini',
-      district: 'Rupandehi',
-      municipality: 'Butwal',
-      wardNumber: '12',
-      tole: 'Madannagar',
+      district: '',
+      municipality: '',
+      wardNumber: '',
+      tole: '',
     },
-    role: 'customer'
+    role: 'customer',
   });
 
   const handleInputChange = (e) => {
@@ -92,30 +94,25 @@ export default function Signup() {
     setErrors({});
 
     try {
-      // Backend expects multipart/form-data because of avatar upload (multer)
       const data = new FormData();
       data.append('username', formData.username.toLowerCase());
       data.append('fullname', formData.fullname);
       data.append('email', formData.email.toLowerCase());
       data.append('phone', formData.phone);
       data.append('password', formData.password);
-      data.append('role', 'customer'); // default role
-
-      // Address must be sent as nested fields OR JSON string
-      // Your backend reads req.body.address as an object via express
+      data.append('role', 'customer');
       data.append('address[province]', formData.address.province);
       data.append('address[district]', formData.address.district);
       data.append('address[municipality]', formData.address.municipality);
       data.append('address[wardNumber]', formData.address.wardNumber);
       data.append('address[tole]', formData.address.tole);
-      // Avatar file
       data.append('avatar', formData.avatar);
 
       await api.post('/users/register', data, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      // On success, redirect to login
+      // ✅ Redirect to login so they sign in and properly hydrate auth state
       navigate('/login');
     } catch (err) {
       console.log(err);
@@ -134,14 +131,12 @@ export default function Signup() {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
 
-        {/* Server error */}
         {errors.server && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
             {errors.server}
           </div>
         )}
 
-        {/* STEP 1: Account Setup */}
         {step === 1 && (
           <div className="space-y-4">
             <Input label="Username" id="username" value={formData.username} onChange={handleInputChange} error={errors.username} />
@@ -153,7 +148,6 @@ export default function Signup() {
           </div>
         )}
 
-        {/* STEP 2: Personal Details */}
         {step === 2 && (
           <div className="space-y-4">
             <Input label="Full Name" id="fullname" value={formData.fullname} onChange={handleInputChange} error={errors.fullname} />
@@ -174,7 +168,6 @@ export default function Signup() {
           </div>
         )}
 
-        {/* STEP 3: Location */}
         {step === 3 && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -209,14 +202,12 @@ export default function Signup() {
           </div>
         )}
 
-        {/* Buttons */}
         <div className="flex gap-4 pt-4">
           {step > 1 && (
             <Button type="button" onClick={handleBack} className="flex-1 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50">
               Back
             </Button>
           )}
-
           {step < 3 ? (
             <Button type="button" onClick={handleNext} className="flex-1 bg-orange-600 hover:bg-orange-700">
               Next Step

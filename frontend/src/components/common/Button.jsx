@@ -21,7 +21,7 @@ export default function Button({
     primary: `bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-2xl ${hoverStyles}`,
     secondary: `bg-gray-900 hover:bg-gray-800 text-white shadow-lg hover:shadow-2xl ${hoverStyles}`,
     outline: 'border-2 border-orange-500 text-orange-500 hover:bg-orange-50 hover:border-orange-600 hover:text-orange-600',
-    ghost: 'text-gray-700 hover:text-orange-500 hover:bg-orange-50'
+    ghost: 'text-gray-700 hover:text-white-500'
   };
 
   const sizes = {

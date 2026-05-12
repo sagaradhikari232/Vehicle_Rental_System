@@ -4,25 +4,35 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
 
-  // Check localStorage on initial load
+  // Rehydrate auth state from localStorage on initial load
   useEffect(() => {
-    const authStatus = localStorage.getItem('isAuth') === 'true';
-    setIsAuthenticated(authStatus);
+    const token = localStorage.getItem('accessToken');
+    const storedUser = localStorage.getItem('user');
+    if (token && storedUser) {
+      setIsAuthenticated(true);
+      setUser(JSON.parse(storedUser));
+    }
   }, []);
 
-  const login = () => {
-    localStorage.setItem('isAuth', 'true');
+  // Call this after a successful login API response
+  const login = (userData, accessToken) => {
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('user', JSON.stringify(userData));
     setIsAuthenticated(true);
+    setUser(userData);
   };
 
   const logout = () => {
-    localStorage.removeItem('isAuth');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
     setIsAuthenticated(false);
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
