@@ -1,17 +1,3 @@
-/**
- * UserMenuDropDown.jsx
- * src/components/common/UserMenuDropDown.jsx
- *
- * Backend user object fields (from getCurrentUser / loginUser):
- *   fullname (lowercase n), email, username, avatar, role
- *
- * Props:
- *   user          — user object from AuthContext
- *   bookingCount  — badge on "Booking History"
- *   onLogout      — () => void
- *   onNavigate    — (path: string) => void  ← required, passed from Navbar
- *   isScrolled    — boolean, controls trigger text/hover contrast
- */
 import { useEffect, useRef, useCallback, useState, forwardRef } from 'react';
 import { Heart, Clock, XCircle, User, LogOut, ChevronDown } from 'lucide-react';
 
@@ -151,7 +137,7 @@ export default function UserMenuDropdown({
   const MENU_ITEMS = [
     { icon: Heart,   label: 'Favourites',      action: () => nav('/favourites')  },
     { icon: Clock,   label: 'Booking History', action: () => nav('/bookings'), badge: bookingCount },
-    { icon: XCircle, label: 'Cancel Booking',  action: () => nav('/cancel')      },
+    //{ icon: XCircle, label: 'Cancel Booking',  action: () => nav('/cancel')      },
     { icon: User,    label: 'My Account',      action: () => nav('/account')     },
     { icon: LogOut,  label: 'Logout',          action: onLogout, destructive: true },
   ];

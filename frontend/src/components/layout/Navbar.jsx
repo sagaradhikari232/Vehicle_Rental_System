@@ -21,7 +21,7 @@ import { useAuth } from '../../context/AuthContext';
 const NAV_LINKS = [
   { name: 'Home',       href: '#home'       },
   { name: 'Categories', href: '#categories' },
-  { name: 'Bikes',      href: '#bikes'      },
+  { name: 'Vehicles',      href: '#vehicles'      },
   { name: 'Contact Us', href: '#contact'    },
 ];
 

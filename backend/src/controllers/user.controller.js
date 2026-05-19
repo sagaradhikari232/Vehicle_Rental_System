@@ -336,6 +336,22 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, req.user, "current user fetced successfully"));
 });
 
+const getUserById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+ 
+  const user = await User.findById(id).select(
+    "fullname username email phone avatar address status role"
+  );
+ 
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+ 
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "User fetched successfully"));
+});
+
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { fullName, email,phone} = req.body;
   console.log(req.body)
@@ -509,6 +525,7 @@ export {
   refreshAccessToken,
   changeCurrentPassword,
   getCurrentUser,
+  getUserById,
   updateAccountDetails,
   updateUserAvatar,
   getAllUsers,

@@ -305,7 +305,7 @@ const Dashboard = () => {
               recentBookings.map((booking) => {
                 const userField    = booking.userId   ?? booking.user;
                 const vehicleField = booking.vehicleId ?? booking.vehicle;
-                const userName     = userField?.fullName  ?? userField?.name    ?? 'Unknown User';
+                const userName     = userField?.fullname  ?? userField?.name    ?? 'Unknown User';
                 const vehicleName  = vehicleField?.name   ?? vehicleField?.model ?? vehicleField?.title ?? 'Unknown Vehicle';
                 const bookingRef   = booking.bookingId ?? booking._id ?? '—';
                 const amount       = booking.totalAmount ?? booking.amount ?? booking.price;
@@ -321,9 +321,7 @@ const Dashboard = () => {
                     </td>
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex-shrink-0">
-                          {userName.charAt(0).toUpperCase()}
-                        </div>
+                         
                         <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                           {userName}
                         </span>

@@ -141,7 +141,7 @@ export const createBooking = async (req, res) => {
       // 7. Update vehicle status to "booked"
       await Vehicle.findByIdAndUpdate(
         vehicle,
-        { status: "booked" },
+        { status: "pending" },
         { session }
       );
 
@@ -164,8 +164,8 @@ export const createBooking = async (req, res) => {
 
   } catch (error) {
     console.error("createBooking error:", error);
-    return res.status(500).json({ 
-      message: "Internal server error while creating booking." 
+    return res.status(500).json({
+      message: "Internal server error while creating booking."
     });
   }
 };
@@ -193,7 +193,7 @@ export const getAllBookings = async (req, res) => {
 
     const [bookings, total] = await Promise.all([
       Booking.find(filter)
-        .populate("user", "name email phone")
+        .populate("user", "fullname email phone avatar")
         .populate("vehicle", "brand model registration_number hourly_rate daily_rate type")
         .populate("payment", "status pidx khalti_transaction_id amount")
         .sort({ createdAt: -1 })
