@@ -136,9 +136,9 @@ export default function UserMenuDropdown({ user, bookingCount = 0, onLogout, onN
   }, [close]);
 
   const MENU_ITEMS = [
-    { icon: Heart,    label: 'Favourite',        action: () => onNavigate?.('/favourites') },
-    { icon: Clock,    label: 'Booking History',  action: () => onNavigate?.('/bookings'),   badge: bookingCount },
-    { icon: XCircle,  label: 'Cancel Booking',   action: () => onNavigate?.('/cancel') },
+    // { icon: Heart,    label: 'Favourite',        action: () => onNavigate?.('/favourites') },
+    { icon: Clock,    label: 'Booking History',  action: () => onNavigate?.('/booking-history'),   badge: bookingCount },
+    // { icon: XCircle,  label: 'Cancel Booking',   action: () => onNavigate?.('/cancel') },
     { icon: User,     label: 'Account',           action: () => onNavigate?.('/account') },
     { icon: LogOut,   label: 'Logout',            action: onLogout,  destructive: true },
   ];

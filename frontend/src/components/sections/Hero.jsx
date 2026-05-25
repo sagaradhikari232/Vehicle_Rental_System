@@ -33,16 +33,23 @@ export default function Hero() {
               Experience the freedom of the open road with our Vehicle rental service. From high-performance sports bikes to comfortable cruisers.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="gap-2">
+              {/* <Button size="lg" className="gap-2" onClick= "#PopularVehicle">
                 Explore Vehicles
                 <ArrowRight className="w-5 h-5" />
-              </Button>
+              </Button> */}
+
               <Button
                 size="lg"
-                variant="outline"
-                className="text-white border-white/40 hover:border-white/80 hover:bg-white/10"
+                className="gap-2"
+                onClick={() => {
+                  const section = document.getElementById("vehicles");
+                  if (section) {
+                    section.scrollIntoView({ behavior: "smooth" });
+                  }
+                }}
               >
-                Learn More
+                Explore Vehicles
+                <ArrowRight className="w-5 h-5" />
               </Button>
             </div>
           </div>
@@ -50,72 +57,6 @@ export default function Hero() {
           <div className="relative h-full hidden lg:flex items-center justify-end">
             <div className="absolute -top-20 -right-20 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl animate-pulse" />
             <div className="absolute top-1/2 -right-32 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl" />
-
-            {/* <div className="relative z-10 w-full max-w-md">
-              <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 hover:border-white/40 transition-all duration-500">
-                <h3 className="text-2xl font-bold text-white mb-8 flex items-center">
-                  <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-orange-500 rounded-xl mr-3 flex items-center justify-center">
-                    <Bike className="w-6 h-6 text-white" />
-                  </div>
-                  Quick Booking
-                </h3>
-                <form className="space-y-5">
-                  <div className="relative">
-                    <label className="flex items-center text-sm font-medium text-white/80 mb-3">
-                      <MapPin className="w-4 h-4 mr-2 text-orange-400" />
-                      Location
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Enter pickup location"
-                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all backdrop-blur-sm"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="relative">
-                      <label className="flex items-center text-sm font-medium text-white/80 mb-3">
-                        <Calendar className="w-4 h-4 mr-2 text-orange-400" />
-                        Pickup
-                      </label>
-                      <input
-                        type="date"
-                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all backdrop-blur-sm"
-                      />
-                    </div>
-                    <div className="relative">
-                      <label className="flex items-center text-sm font-medium text-white/80 mb-3">
-                        <Calendar className="w-4 h-4 mr-2 text-orange-400" />
-                        Return
-                      </label>
-                      <input
-                        type="date"
-                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all backdrop-blur-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="relative">
-                    <label className="flex items-center text-sm font-medium text-white/80 mb-3">
-                      <Bike className="w-4 h-4 mr-2 text-orange-400" />
-                      Bike Type
-                    </label>
-                    <select className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all backdrop-blur-sm appearance-none cursor-pointer">
-                      <option value="" className="text-gray-900">Select bike type</option>
-                      <option value="sports" className="text-gray-900">Sports</option>
-                      <option value="scooter" className="text-gray-900">Scooter</option>
-                      <option value="cruiser" className="text-gray-900">Cruiser</option>
-                      <option value="electric" className="text-gray-900">Electric</option>
-                    </select>
-                  </div>
-
-                  <Button type="submit" size="lg" className="w-full gap-2 mt-6">
-                    Search Bikes
-                    <ArrowRight className="w-5 h-5" />
-                  </Button>
-                </form>
-              </div>
-            </div> */}
           </div>
         </div>
       </div>

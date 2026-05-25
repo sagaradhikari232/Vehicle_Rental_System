@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { XCircle, RefreshCw, Home } from 'lucide-react';
+import api from '../../utils/api'; // adjust path to your api.js
 
 const REASON_MESSAGES = {
   user_canceled:      'You cancelled the payment. No amount was deducted.',
@@ -15,8 +16,33 @@ export default function PaymentFailed() {
   const navigate  = useNavigate();
   const bookingId = params.get('bookingId');
   const reason    = params.get('reason') ?? 'failed';
+  const message   = REASON_MESSAGES[reason] ?? REASON_MESSAGES.failed;
 
-  const message = REASON_MESSAGES[reason] ?? REASON_MESSAGES.failed;
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState(null);
+
+
+const handleRetry = async () => {
+  try {
+    setLoading(true);
+    setError(null);
+
+    const res = await api.post(`/payments/initiate/${bookingId}`);
+    window.location.href = res.data.payment_url;
+
+  } catch (err) {
+    if (err.response?.status === 409) {
+      const { payment_url } = err.response.data;
+      if (payment_url) {
+        window.location.href = payment_url;
+        return;
+      }
+    }
+    setError(err.response?.data?.message || 'Something went wrong. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 to-red-100 p-6">
@@ -52,14 +78,21 @@ export default function PaymentFailed() {
           </div>
         </div>
 
+        {/* Error message */}
+        {error && (
+          <p className="text-sm text-rose-500 font-medium">{error}</p>
+        )}
+
         {/* Actions */}
         <div className="flex flex-col gap-3 pt-2">
           {bookingId && (
             <button
-              onClick={() => navigate(`/bookings/${bookingId}`)}
-              className="flex items-center justify-center gap-2 w-full py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition"
+              onClick={handleRetry}
+              disabled={loading}
+              className="flex items-center justify-center gap-2 w-full py-3 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold rounded-xl transition"
             >
-              <RefreshCw size={16} /> Retry Payment
+              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+              {loading ? 'Redirecting to Khalti...' : 'Retry Payment'}
             </button>
           )}
           <button
@@ -69,6 +102,7 @@ export default function PaymentFailed() {
             <Home size={16} /> Back to Home
           </button>
         </div>
+
       </div>
     </div>
   );

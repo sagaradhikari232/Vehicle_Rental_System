@@ -37,24 +37,6 @@ export default function VehicleCard({ vehicle, isHovered, onHoverChange }) {
           {vehicle.name}
         </h3>
 
-        <div className="flex items-center mb-6">
-          <div className="flex items-center gap-1">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className={`w-4 h-4 transition-all ${
-                  i < Math.floor(vehicle.rating)
-                    ? 'text-orange-500 fill-orange-500'
-                    : 'text-gray-300'
-                }`}
-              />
-            ))}
-          </div>
-          <span className="ml-3 text-sm font-semibold text-gray-700">
-            {vehicle.rating}
-          </span>
-        </div>
-
         <div className="flex flex-wrap gap-2 mb-6">
           {vehicle.features.map((feature, idx) => (
             <span

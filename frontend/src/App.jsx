@@ -16,6 +16,7 @@ import VehicleDetail    from './components/pages/VehicleDetails';
 
 // Account page — NEW
 import AccountPage      from './components/pages/AccountPage';
+import BookingHistory from './components/pages/BookingHistory';
 
 // Admin
 import DashboardLayout  from './components/admin/DashboardLayout';
@@ -61,6 +62,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <AccountPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/booking-history"
+            element={
+              <ProtectedRoute>
+                <BookingHistory />
               </ProtectedRoute>
             }
           />

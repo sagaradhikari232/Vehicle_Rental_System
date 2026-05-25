@@ -47,10 +47,16 @@ const getRecommendedVehicles = async (req, res) => {
     } catch {
       recentIds = [];
     }
-
+    var recent = recentIds[0]
+    var type 
+    // console.log(recent)
     // console.log('recentIds from cookie:', recentIds); // 👈 check this
+    if (recent){
+    const currentvehicle = await Vehicle.findById(recent)
+    type = currentvehicle.type
+    }
 
-    const availableVehicles = await Vehicle.find({ status: 'available' });
+    const availableVehicles = await Vehicle.find({ status: 'available', type: type });
     // console.log('available vehicles are', availableVehicles)
 
     if (recentIds.length === 0) {

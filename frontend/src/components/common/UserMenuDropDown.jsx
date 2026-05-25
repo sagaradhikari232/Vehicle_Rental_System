@@ -135,7 +135,7 @@ export default function UserMenuDropdown({
   }, [onNavigate]);
 
   const MENU_ITEMS = [
-    { icon: Heart,   label: 'Favourites',      action: () => nav('/favourites')  },
+    // { icon: Heart,   label: 'Favourites',      action: () => nav('/favourites')  },
     { icon: Clock,   label: 'Booking History', action: () => nav('/bookings'), badge: bookingCount },
     //{ icon: XCircle, label: 'Cancel Booking',  action: () => nav('/cancel')      },
     { icon: User,    label: 'My Account',      action: () => nav('/account')     },

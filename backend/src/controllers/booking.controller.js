@@ -103,7 +103,7 @@ export const createBooking = async (req, res) => {
     if (!vehicleDoc) {
       return res.status(404).json({ message: "Vehicle not found." });
     }
-    if (vehicleDoc.status !== "available") {
+    if (vehicleDoc.status === "booked") {
       return res.status(400).json({ message: "Vehicle is not available for rent." });
     }
 
@@ -138,16 +138,14 @@ export const createBooking = async (req, res) => {
         payment_status: "pending",
       }], { session });
 
-      // 7. Update vehicle status to "booked"
-      await Vehicle.findByIdAndUpdate(
-        vehicle,
-        { status: "pending" },
-        { session }
-      );
+      // // 7. Update vehicle status to "booked"
+      // await Vehicle.findByIdAndUpdate(
+      //   vehicle,
+      //   { status: "pending" },
+      //   { session }
+      // );
 
       await session.commitTransaction();
-
-      console.log(`✅ Booking created & Vehicle ${vehicle} status changed to "booked"`);
 
       return res.status(201).json({
         message: "Booking created successfully. Proceed to payment.",
