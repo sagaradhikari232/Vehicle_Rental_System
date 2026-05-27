@@ -221,7 +221,7 @@ const BookingCard = ({ booking, onCancelClick, cancellingId, onPayError }) => {
             <div>
               <p className="text-xs text-gray-400 mb-0.5">Total amount</p>
               <p className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
-                Rs.{booking.payment?.amount ?? booking.grand_total}
+                Rs.{Math.round(booking.payment?.amount ?? booking.grand_total)}
               </p>
             </div>
             <div className="text-right">

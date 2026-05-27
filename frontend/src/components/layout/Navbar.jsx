@@ -1,14 +1,3 @@
-/**
- * Navbar.jsx
- * src/components/layout/Navbar.jsx
- *
- * Changes from previous version:
- * - onNavigate passed to UserMenuDropdown (was missing — caused all menu items to do nothing)
- * - handleNavigate helper: navigate(path) + close mobile menu
- * - Mobile menu reads user.fullname (correct backend field)
- * - Mobile menu "My Profile" → /account
- * - Removed dead /settings route
- */
 import { useState } from 'react'; 
 import { useNavigate, Link } from 'react-router-dom';
 import { Menu, X, Bike, LogOut, User } from 'lucide-react';
@@ -113,12 +102,12 @@ export default function Navbar() {
                 >
                   Log in
                 </button>
-                <Button
+                <button
                   onClick={() => navigate('/signup')}
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                  className={`px-4 py-2 font-medium rounded-lg transition-colors ${textStyle}`}
                 >
                   Sign Up
-                </Button>
+                </button>
               </>
             )}
           </div>
@@ -201,7 +190,7 @@ export default function Navbar() {
                     </Button>
                     <Button
                       onClick={() => handleNavigate('/signup')}
-                      className="bg-orange-500 hover:bg-orange-600 text-white w-full"
+                      className="w-full border border-gray-300 text-gray-700 hover:bg-gray-50"
                     >
                       Sign Up
                     </Button>

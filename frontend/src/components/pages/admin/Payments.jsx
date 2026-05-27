@@ -179,7 +179,7 @@ const Payments = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/60">
-                {['Transaction', 'Customer', 'Booking', 'Amount', 'Status', 'Date'].map((h) => (
+                {['Transaction', 'Customer', 'Booking', 'Amount', 'Status'].map((h) => (
                   <th key={h} className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.18em] whitespace-nowrap">
                     {h}
                   </th>
@@ -210,11 +210,11 @@ const Payments = () => {
                         </div>
                         <div>
                           <p className="text-xs font-black text-slate-900 font-mono tracking-tight">
-                            {payment.pidx ? `${payment.pidx.slice(0, 12)}…` : '—'}
+                            pidx: {payment.pidx ? `${payment.pidx}` : '—'}
                           </p>
                           {payment.khalti_transaction_id && (
                             <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                              TXN: {payment.khalti_transaction_id.slice(0, 10)}…
+                              TXN: {payment.khalti_transaction_id}
                             </p>
                           )}
                         </div>
@@ -224,22 +224,10 @@ const Payments = () => {
                     {/* Customer */}
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
-                        {/* Avatar */}
-                        {payment.user?.avatar ? (
-                          <img
-                            src={payment.user.avatar}
-                            alt={payment.user.fullname}
-                            className="w-9 h-9 rounded-xl object-cover border border-slate-200 shrink-0"
-                          />
-                        ) : (
-                          <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-black text-sm shrink-0">
-                            {(payment.user?.fullname ?? payment.user?.name ?? '?')[0].toUpperCase()}
-                          </div>
-                        )}
+                        
+                        
                         <div>
-                          <p className="text-sm font-bold text-slate-800">
-                            {payment.user?.fullname ?? payment.user?.name ?? '—'}
-                          </p>
+                
                           <p className="text-xs text-slate-400">{payment.user?.email ?? '—'}</p>
                           {payment.user?.phone && (
                             <p className="text-[10px] text-slate-400">{payment.user.phone}</p>
@@ -252,7 +240,7 @@ const Payments = () => {
                     <td className="px-6 py-5">
                       <div className="space-y-1">
                         <p className="text-xs font-mono font-bold text-slate-600">
-                          #{payment.booking?._id?.slice(-8) ?? '—'}
+                          #{payment.booking?._id ?? '—'}
                         </p>
                         {/* Vehicle info */}
                         {payment.booking?.vehicle ? (
@@ -295,9 +283,9 @@ const Payments = () => {
                     </td>
 
                     {/* Date */}
-                    <td className="px-6 py-5">
+                    {/* <td className="px-6 py-5">
                       <p className="text-sm text-slate-600">{fmt(payment.createdAt)}</p>
-                    </td>
+                    </td> */}
                   </tr>
                 ))
               )}

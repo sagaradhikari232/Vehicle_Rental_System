@@ -106,7 +106,7 @@ export default function PaymentSuccess() {
         <div className="flex flex-col gap-3 pt-2">
           {bookingId && (
             <button
-              onClick={() => navigate(`/bookings/${bookingId}`)}
+              onClick={() => navigate(`/booking-history`)}
               className="flex items-center justify-center gap-2 w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition"
             >
               View Booking <ArrowRight size={16} />

@@ -41,7 +41,8 @@ export function getRecommendations(recentIds, allVehicles, topN = 3) {
   profileVector.forEach((val, i) => { profileVector[i] = val / totalWeight; });
 
   // Score unseen candidates
-  const candidates = allVehicles.filter(v => !viewedSet.has(String(v._id)));
+  const candidates = allVehicles.filter  (v => !viewedSet.has(String(v._id)));
+  // const candidates = allVehicles.slice(1); 
   // console.log("log from candidates", candidates) 
 
   return candidates

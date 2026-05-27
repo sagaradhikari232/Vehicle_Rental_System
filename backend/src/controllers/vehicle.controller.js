@@ -65,7 +65,7 @@ const getRecommendedVehicles = async (req, res) => {
     }
 
     const recommendations = getRecommendations(recentIds, availableVehicles);
-    console.log("log from recommnedatoins", recommendations)
+    // console.log("log from recommnedatoins", recommendations)
     res.json({ recommendations, basedOn: 'recentlyViewed', viewedCount: recentIds.length });
 
   } catch (err) {
@@ -120,14 +120,14 @@ const registerVehicle = asyncHandler(async (req, res) => {
 
   // Nepal-specific registration number validation
   // Examples: "Ba 2 Cha 1234", "Lumbini Ba 1-5678", "A BC 1234", "Ga 12-3456"
-  const nepRegRegex = /^(?:[A-Za-z]+(?:\s|-)?)?[A-Za-z]\s?[A-Za-z]?\s?-?\s?\d{1,4}(?:\s?-?\s?\d{1,4})?$/i;
+  // const nepRegRegex = /^(?:[A-Za-z]+(?:\s|-)?)?[A-Za-z]\s?[A-Za-z]?\s?-?\s?\d{1,4}(?:\s?-?\s?\d{1,4})?$/i;
   const regUpper = registration_number?.trim().toUpperCase();
-  if (!regUpper || !nepRegRegex.test(regUpper)) {
-    errors.push("Invalid Nepali registration number format (e.g. Ba 2 Cha 1234 or Lumbini Ba 1-5678)");
-  }
+  // if (!regUpper || !nepRegRegex.test(regUpper)) {
+  //   errors.push("Invalid Nepali registration number format (e.g. Ba 2 Cha 1234 or Lumbini Ba 1-5678)");
+  // }
 
   // Vehicle type (expanded for Nepal context)
-  const validTypes = ['car', 'bike', 'scooter', 'suv', 'jeep', 'ev'];
+  const validTypes = ['car', 'bike', 'scooter', 'suv', 'jeep'];
   if (!type || !validTypes.includes(type.toLowerCase())) {
     errors.push(`Invalid vehicle type. Allowed: ${validTypes.join(', ')}`);
   }
@@ -156,7 +156,7 @@ const registerVehicle = asyncHandler(async (req, res) => {
   }
 
   // EV validation
-  if (type?.toLowerCase() === 'ev') {
+  if (fuel_type?.toLowerCase() === 'electric') {
     const range = Number(battery_range);
     if (!Number.isFinite(range) || range < 80) {
       errors.push("Electric vehicles must have battery range ≥ 80 km");

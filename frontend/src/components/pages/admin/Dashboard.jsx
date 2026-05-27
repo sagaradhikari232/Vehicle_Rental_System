@@ -307,8 +307,8 @@ const Dashboard = () => {
                 const vehicleField = booking.vehicleId ?? booking.vehicle;
                 const userName     = userField?.fullname  ?? userField?.name    ?? 'Unknown User';
                 const vehicleName  = vehicleField?.name   ?? vehicleField?.model ?? vehicleField?.title ?? 'Unknown Vehicle';
-                const bookingRef   = booking.bookingId ?? booking._id ?? '—';
-                const amount       = booking.totalAmount ?? booking.amount ?? booking.price;
+                const bookingRef   = booking._id ?? '—';
+                const amount       = booking.total_rent_amount;
                 const status       = booking.status ?? 'pending';
 
                 return (
@@ -317,7 +317,7 @@ const Dashboard = () => {
                     className="group hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-all duration-200 border-b border-slate-50 dark:border-slate-800 last:border-0"
                   >
                     <td className="px-8 py-5 text-sm font-bold text-amber-600 font-mono tracking-wide">
-                      #{typeof bookingRef === 'string' ? bookingRef.slice(-8).toUpperCase() : bookingRef}
+                      #{bookingRef}
                     </td>
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-3">
@@ -330,7 +330,7 @@ const Dashboard = () => {
                     <td className="px-8 py-5 text-sm text-slate-600 dark:text-slate-400 font-medium">
                       {vehicleName}
                     </td>
-                    <td className="px-8 py-5 text-sm text-slate-400">
+                    <td className="px-8 py-5 text-sm text-slate-600">
                       {fmtDate(booking.createdAt ?? booking.startDate)}
                     </td>
                     <td className="px-8 py-5 text-sm font-bold text-slate-900 dark:text-slate-100">
@@ -338,11 +338,6 @@ const Dashboard = () => {
                     </td>
                     <td className="px-8 py-5">
                       <StatusBadge type={status} />
-                    </td>
-                    <td className="px-8 py-5 text-right">
-                      <button className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-400 transition-colors">
-                        <MoreHorizontal size={18} />
-                      </button>
                     </td>
                   </tr>
                 );

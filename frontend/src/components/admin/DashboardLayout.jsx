@@ -1,7 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { 
-  LayoutDashboard, Car, CalendarCheck, Users, 
+  LayoutDashboard, Car, Bike, CalendarCheck, Users, 
   CreditCard, Settings, LogOut, Menu, ChevronLeft, 
   Bell, Search, Command, Sun, Moon 
 } from 'lucide-react';
@@ -62,7 +62,8 @@ const DashboardLayout = () => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
-    { icon: Car, label: 'Vehicles', path: '/admin/vehicles' },
+    // { icon: Car, label: 'Vehicles', path: '/admin/vehicles' },
+    { icon: Bike, label: 'Vehicles', path: '/admin/vehicles' },
     { icon: CalendarCheck, label: 'Bookings', path: '/admin/bookings' },
     { icon: Users, label: 'Users', path: '/admin/users' },
     { icon: CreditCard, label: 'Payments', path: '/admin/payments' },
@@ -92,9 +93,9 @@ const DashboardLayout = () => {
           <div className="h-20 flex items-center px-6 mb-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-amber-400 rounded-xl flex items-center justify-center shadow-lg shadow-amber-100 dark:shadow-none">
-                <Car className="text-amber-950" size={22} strokeWidth={2.5} />
+                <Bike className="text-amber-950" size={22} strokeWidth={2.5} />
               </div>
-              {!isCollapsed && <span className="text-xl font-black tracking-tighter dark:text-white">V-DRIVE<span className="text-amber-500">.</span></span>}
+              {!isCollapsed && <span className="text-xl font-black tracking-tighter dark:text-white">RideOn</span>}
             </div>
           </div>
 
@@ -105,7 +106,7 @@ const DashboardLayout = () => {
           </nav>
 
           <div className="absolute bottom-6 w-full px-4 space-y-2">
-            <button onClick={() => navigate('/')} className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl w-full transition-all group">
+            <button onClick={() => navigate('/login')} className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl w-full transition-all group">
               <LogOut size={20} />
               {!isCollapsed && <span className="font-bold text-sm">Logout</span>}
             </button>
@@ -141,7 +142,6 @@ const DashboardLayout = () => {
                   <p className="text-sm font-bold dark:text-slate-200">MRS</p>
                   <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Admin</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center text-amber-950 font-black">MRS</div>
               </div>
             </div>
           </header>

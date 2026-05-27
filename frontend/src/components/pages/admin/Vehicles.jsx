@@ -11,19 +11,17 @@ const STATUS_CONFIG = {
   available:   { label: "Available",   color: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "bg-emerald-500", Icon: CheckCircle },
   booked:      { label: "Booked",      color: "bg-amber-50 text-amber-700 border-amber-200",       dot: "bg-amber-400",   Icon: Clock },
   maintenance: { label: "Maintenance", color: "bg-red-50 text-red-700 border-red-200",             dot: "bg-red-500",     Icon: AlertTriangle },
-  reserved:    { label: "Reserved",    color: "bg-blue-50 text-blue-700 border-blue-200",          dot: "bg-blue-500",    Icon: Clock },
-  rented:      { label: "Rented",      color: "bg-purple-50 text-purple-700 border-purple-200",    dot: "bg-purple-500",  Icon: Clock },
-  inactive:    { label: "Inactive",    color: "bg-gray-50 text-gray-500 border-gray-200",          dot: "bg-gray-400",    Icon: AlertTriangle },
 };
 
 const FUEL_OPTIONS   = ["petrol", "diesel", "electric"];
 const TYPE_OPTIONS   = ["car", "bike", "scooter", "suv", "jeep", "ev"];
-const STATUS_OPTIONS = ["available", "booked", "maintenance", "reserved", "rented", "inactive"];
+const STATUS_OPTIONS = ["available", "booked", "maintenance"];
 
 const EMPTY_FORM = {
   brand: "", model: "", registration_number: "", type: "car",
   fuel_type: "petrol", seats: "", daily_rate: "", hourly_rate: "",
   status: "available", location: "Lumbini Branch",
+  mileage: "", battery_range: "",
   image_file: null,
 };
 
@@ -128,10 +126,21 @@ function DeleteModal({ vehicle, onConfirm, onCancel, loading }) {
 function VehicleFormModal({ vehicle, onClose, onSubmit, loading }) {
   const isEdit = Boolean(vehicle?._id);
   const [form, setForm] = useState(vehicle
-    ? { brand: vehicle.brand, model: vehicle.model, registration_number: vehicle.registration_number,
-        type: vehicle.type, fuel_type: vehicle.fuel_type, seats: vehicle.seats,
-        daily_rate: vehicle.daily_rate, hourly_rate: vehicle.hourly_rate || "",
-        status: vehicle.status, location: vehicle.location || "Lumbini Branch", image_file: null }
+    ? {
+        brand: vehicle.brand,
+        model: vehicle.model,
+        registration_number: vehicle.registration_number,
+        type: vehicle.type,
+        fuel_type: vehicle.fuel_type,
+        seats: vehicle.seats,
+        daily_rate: vehicle.daily_rate,
+        hourly_rate: vehicle.hourly_rate || "",
+        status: vehicle.status,
+        location: vehicle.location || "Lumbini Branch",
+        mileage: vehicle.mileage || "",
+        battery_range: vehicle.battery_range || "",
+        image_file: null,
+      }
     : { ...EMPTY_FORM }
   );
   const [previewUrl, setPreviewUrl] = useState(vehicle?.image_url || "");
@@ -176,7 +185,9 @@ function VehicleFormModal({ vehicle, onClose, onSubmit, loading }) {
     data.append("fuel_type", form.fuel_type);
     data.append("seats", Number(form.seats));
     data.append("daily_rate", Number(form.daily_rate));
-    if (form.hourly_rate) data.append("hourly_rate", Number(form.hourly_rate));
+    if (form.hourly_rate)    data.append("hourly_rate",    Number(form.hourly_rate));
+    if (form.mileage)        data.append("mileage",        Number(form.mileage));
+    if (form.battery_range)  data.append("battery_range",  Number(form.battery_range));
     data.append("status", form.status);
     data.append("location", form.location);
     if (form.image_file) data.append("image_url", form.image_file); // multer field name is "image_url"
@@ -250,6 +261,12 @@ function VehicleFormModal({ vehicle, onClose, onSubmit, loading }) {
           </Field>
           <Field label="Hourly rate (Rs.) — optional">
             <input name="hourly_rate" type="number" className={inputCls()} value={form.hourly_rate} onChange={handleChange} />
+          </Field>
+          <Field label="Mileage (km) — optional">
+            <input name="mileage" type="number" min="0" className={inputCls()} value={form.mileage} onChange={handleChange} placeholder="e.g. 45000" />
+          </Field>
+          <Field label="Battery range (km) — optional">
+            <input name="battery_range" type="number" min="0" className={inputCls()} value={form.battery_range} onChange={handleChange} placeholder="e.g. 300" />
           </Field>
 
           <div className="col-span-2 flex gap-3 mt-2">

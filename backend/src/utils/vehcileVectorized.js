@@ -1,4 +1,4 @@
-const TYPES = ['car', 'bike', 'scooter', 'suv', 'jeep', 'ev'];
+const TYPES = ['car', 'bike', 'scooter', 'suv', 'jeep'];
 const FUEL_TYPES = ['petrol', 'diesel', 'electric'];
 
 const MIN_DAILY = 500,

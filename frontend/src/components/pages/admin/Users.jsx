@@ -80,7 +80,7 @@ const Users = () => {
   const getRoleBadge = (role) => {
     const styles = {
       admin:    'bg-purple-100 text-purple-700 border border-purple-200',
-      owner:    'bg-amber-100 text-amber-700 border border-amber-200',
+      // owner:    'bg-amber-100 text-amber-700 border border-amber-200',
       customer: 'bg-slate-100 text-slate-600 border border-slate-200',
     };
     return styles[role] || styles.customer;
@@ -121,7 +121,7 @@ const Users = () => {
             <option value="">All Roles</option>
             <option value="customer">Customer</option>
             <option value="admin">Admin</option>
-            <option value="owner">Owner</option>
+            {/* <option value="owner">Owner</option> */}
           </select>
 
           <select

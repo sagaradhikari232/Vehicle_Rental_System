@@ -72,109 +72,248 @@ const isTerminalPaymentStatus = (status) =>
 // @route   POST /api/v1/payments/initiate/:bookingId
 // @access  Private (user)
 // ─────────────────────────────────────────────
+// export const initiatePayment = async (req, res) => {
+//   try {
+//     const { bookingId } = req.params;
+
+//     // 1. Fetch booking
+//     const booking = await Booking.findById(bookingId).populate(
+//       "user",
+//       "fullname email phone"
+//     );
+//     console.log(booking.user);
+
+//     if (!booking) {
+//       return res.status(404).json({ message: "Booking not found." });
+//     }
+
+//     // 2. Only the booking owner can initiate payment
+//     if (booking.user._id.toString() !== req.user._id.toString()) {
+//       return res.status(403).json({ message: "Access denied." });
+//     }
+
+//     // 3. Only pending or confirmed bookings can be paid
+//     if (!["pending", "confirmed"].includes(booking.status)) {
+//       return res.status(400).json({
+//         message: `Cannot initiate payment for a booking with status: ${booking.status}.`,
+//       });
+//     }
+
+//     // 4. Check for an existing active payment
+//     //
+//     // FIX 1 — Before blocking the retry, check if the existing payment
+//     // has already expired locally (expires_at < now). If it has, mark it
+//     // expired and clear the booking ref so a fresh payment can be created.
+//     // Without this, a user whose Khalti link expired is permanently locked
+//     // out with "A payment is already in progress" even though it isn't.
+//     const existingPayment = await Payment.findOne({
+//       booking: bookingId,
+//       status: { $in: ["initiated", "pending"] },
+//     });
+
+//     if (existingPayment) {
+//       const isLocallyExpired =
+//         existingPayment.expires_at && existingPayment.expires_at < new Date();
+
+//       if (isLocallyExpired) {
+//         // Mark the dead payment expired and free the booking for retry
+//         existingPayment.status = "expired";
+//         await existingPayment.save();
+
+//         booking.payment = null;
+//         booking.payment_status = "pending";
+//         await booking.save();
+
+//         // Fall through to create a fresh payment below
+//       } else {
+//         // Payment is genuinely still active — block duplicate
+//         return res.status(409).json({
+//           message: "A payment is already in progress for this booking.",
+//           payment_url: existingPayment.payment_url,
+//           expires_at: existingPayment.expires_at,
+//         });
+//       }
+//     }
+
+//     // 5. Amount must be at least Rs. 10 (1000 paisa)
+//     const amountInPaisa = toPaisa(booking.total_rent_amount);
+//     if (amountInPaisa < 1000) {
+//       return res.status(400).json({
+//         message: "Booking amount must be at least Rs. 10 to process payment.",
+//       });
+//     }
+
+//     // 6. Build Khalti initiate payload
+//     const khaltiPayload = {
+//       // FIX 4 — return_url must include /v1/ to match Express route mounting.
+//       // Original code had /api/payments/callback which 404s on your server.
+//       // Khalti completes the payment but your callback never fires —
+//       // booking stays pending forever and user sees a broken page.
+//       return_url: `${process.env.FRONTEND_URL}/api/v1/payments/callback`,
+//       website_url: process.env.FRONTEND_URL,
+//       amount: amountInPaisa,
+//       purchase_order_id: booking._id.toString(),
+//       purchase_order_name: `Vehicle Rental - Booking #${booking._id}`,
+//       customer_info: {
+//         name: booking.user.fullname,
+//         email: booking.user.email,
+//         phone: booking.user.phone,
+//       },
+//       amount_breakdown: [
+//         { label: "Rent Amount", amount: toPaisa(booking.total_rent_amount) },
+//       ],
+//       product_details: [
+//         {
+//           identity: booking._id.toString(),
+//           name: `Vehicle Rental Booking #${booking._id}`,
+//           total_price: amountInPaisa,
+//           quantity: 1,
+//           unit_price: amountInPaisa,
+//         },
+//       ],
+//       merchant_booking_id: booking._id.toString(),
+//     };
+
+//     // 7. Call Khalti initiate API
+//     const khaltiRes = await axios.post(
+//       `${KHALTI_BASE_URL}/epayment/initiate/`,
+//       khaltiPayload,
+//       { headers: khaltiHeaders }
+//     );
+
+//     const { pidx, payment_url, expires_at } = khaltiRes.data;
+
+//     // 8. Create Payment document in our DB
+//     const payment = await Payment.create({
+//       booking: booking._id,
+//       user: req.user._id,
+//       amount: booking.total_rent_amount,
+//       pidx,
+//       payment_url,
+//       expires_at: new Date(expires_at),
+//       status: "pending",
+//     });
+
+//     // 9. Link payment ref to booking
+//     booking.payment = payment._id;
+//     await booking.save();
+
+//     return res.status(200).json({
+//       message: "Payment initiated. Redirect user to payment_url.",
+//       payment_url,
+//       pidx,
+//       expires_at,
+//     });
+//   } catch (error) {
+//     if (error.response?.data) {
+//       return res.status(400).json({
+//         message: "Khalti payment initiation failed.",
+//         error: error.response.data,
+//       });
+//     }
+//     console.error("initiatePayment error:", error);
+//     return res.status(500).json({ message: "Internal server error." });
+//   }
+// };
+
 export const initiatePayment = async (req, res) => {
   try {
     const { bookingId } = req.params;
 
-    // 1. Fetch booking
+
     const booking = await Booking.findById(bookingId).populate(
       "user",
       "fullname email phone"
     );
-    console.log(booking.user);
 
     if (!booking) {
       return res.status(404).json({ message: "Booking not found." });
     }
 
-    // 2. Only the booking owner can initiate payment
+    // Authorization check
     if (booking.user._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Access denied." });
     }
 
-    // 3. Only pending or confirmed bookings can be paid
+    // Status check
     if (!["pending", "confirmed"].includes(booking.status)) {
       return res.status(400).json({
-        message: `Cannot initiate payment for a booking with status: ${booking.status}.`,
+        message: `Cannot initiate payment for ${booking.status} booking.`,
       });
     }
 
-    // 4. Check for an existing active payment
-    //
-    // FIX 1 — Before blocking the retry, check if the existing payment
-    // has already expired locally (expires_at < now). If it has, mark it
-    // expired and clear the booking ref so a fresh payment can be created.
-    // Without this, a user whose Khalti link expired is permanently locked
-    // out with "A payment is already in progress" even though it isn't.
-    const existingPayment = await Payment.findOne({
+    // ==================== EXISTING PAYMENT CHECK ====================
+    let existingPayment = await Payment.findOne({
       booking: bookingId,
-      status: { $in: ["initiated", "pending"] },
+      status: { $in: ["pending", "initiated"] },
     });
 
     if (existingPayment) {
-      const isLocallyExpired =
-        existingPayment.expires_at && existingPayment.expires_at < new Date();
+      const now = new Date();
 
-      if (isLocallyExpired) {
-        // Mark the dead payment expired and free the booking for retry
+      // Consider expired if less than 2 minutes remaining (grace period)
+      const isExpired = !existingPayment.expires_at ||
+        existingPayment.expires_at < now ||
+        (existingPayment.expires_at.getTime() - now.getTime() < 120000); // 2 minutes grace
+
+      if (isExpired) {
+        // Cleanup expired payment
         existingPayment.status = "expired";
         await existingPayment.save();
 
+        // Free up the booking
         booking.payment = null;
         booking.payment_status = "pending";
         await booking.save();
 
-        // Fall through to create a fresh payment below
-      } else {
-        // Payment is genuinely still active — block duplicate
+        console.log(`Expired payment cleaned up for booking ${bookingId}`);
+      }
+      else {
+        // Payment is still valid → return existing link (Best UX)
         return res.status(409).json({
           message: "A payment is already in progress for this booking.",
+          alreadyExists: true,
           payment_url: existingPayment.payment_url,
           expires_at: existingPayment.expires_at,
+          pidx: existingPayment.pidx
         });
       }
     }
 
-    // 5. Amount must be at least Rs. 10 (1000 paisa)
+
+    // ====================== CREATE NEW PAYMENT ======================
+
     const amountInPaisa = toPaisa(booking.total_rent_amount);
+
     if (amountInPaisa < 1000) {
-      return res.status(400).json({
-        message: "Booking amount must be at least Rs. 10 to process payment.",
-      });
+      return res.status(400).json({ message: "Minimum amount is Rs. 10." });
     }
 
-    // 6. Build Khalti initiate payload
     const khaltiPayload = {
-      // FIX 4 — return_url must include /v1/ to match Express route mounting.
-      // Original code had /api/payments/callback which 404s on your server.
-      // Khalti completes the payment but your callback never fires —
-      // booking stays pending forever and user sees a broken page.
-      return_url: `${process.env.FRONTEND_URL}/api/v1/payments/callback`,
+      return_url: `${process.env.FRONTEND_URL}/payment/callback`,   // ← Fixed: Use frontend route
       website_url: process.env.FRONTEND_URL,
       amount: amountInPaisa,
       purchase_order_id: booking._id.toString(),
-      purchase_order_name: `Vehicle Rental - Booking #${booking._id}`,
+      purchase_order_name: `Vehicle Rental - #${booking._id}`,
       customer_info: {
         name: booking.user.fullname,
         email: booking.user.email,
         phone: booking.user.phone,
       },
       amount_breakdown: [
-        { label: "Rent Amount", amount: toPaisa(booking.total_rent_amount) },
+        { label: "Rent Amount", amount: amountInPaisa },
       ],
       product_details: [
         {
           identity: booking._id.toString(),
-          name: `Vehicle Rental Booking #${booking._id}`,
+          name: `Booking #${booking._id}`,
           total_price: amountInPaisa,
           quantity: 1,
           unit_price: amountInPaisa,
         },
       ],
-      merchant_booking_id: booking._id.toString(),
     };
 
-    // 7. Call Khalti initiate API
     const khaltiRes = await axios.post(
       `${KHALTI_BASE_URL}/epayment/initiate/`,
       khaltiPayload,
@@ -183,7 +322,7 @@ export const initiatePayment = async (req, res) => {
 
     const { pidx, payment_url, expires_at } = khaltiRes.data;
 
-    // 8. Create Payment document in our DB
+    // Create new payment record
     const payment = await Payment.create({
       booking: booking._id,
       user: req.user._id,
@@ -194,25 +333,28 @@ export const initiatePayment = async (req, res) => {
       status: "pending",
     });
 
-    // 9. Link payment ref to booking
+    // Link payment to booking
     booking.payment = payment._id;
+    booking.payment_status = "pending";
     await booking.save();
 
     return res.status(200).json({
-      message: "Payment initiated. Redirect user to payment_url.",
+      success: true,
+      message: "Payment initiated successfully",
       payment_url,
       pidx,
       expires_at,
     });
+
   } catch (error) {
+    console.error("initiatePayment error:", error);
     if (error.response?.data) {
       return res.status(400).json({
-        message: "Khalti payment initiation failed.",
+        message: "Khalti payment initiation failed",
         error: error.response.data,
       });
     }
-    console.error("initiatePayment error:", error);
-    return res.status(500).json({ message: "Internal server error." });
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 

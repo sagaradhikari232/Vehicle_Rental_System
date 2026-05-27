@@ -23,14 +23,14 @@ const vehicleSchema = new Schema({
     uppercase: true,
     trim: true,
     match: [
-      /^[A-Za-z0-9\s-]{5,20}$/,
-      'Invalid registration number format'
+      /^[A-Z]{2}\s*\d{1,3}\s*[A-Z]{2}\s*\d{1,4}$/i,      ,
+      'Invalid registration number format. Example: LU 19 PA 1428'
     ]
   },
 
   type: {
     type: String,
-    enum: ['car', 'bike', 'scooter', 'suv', 'jeep', 'ev'],
+    enum: ['car', 'bike', 'scooter', 'suv', 'jeep'],
     required: [true, 'Vehicle type is required']
   },
 
@@ -48,7 +48,7 @@ const vehicleSchema = new Schema({
   },
 
   daily_rate: {
-    type: Number,          
+    type: Number,
     required: [true, 'Daily rate is required'],
     min: [500, 'Rate cannot be negative'],
     max: [15000, 'Rate is too high']
@@ -82,7 +82,7 @@ const vehicleSchema = new Schema({
     maxlength: [255],
   },
 
-  mileage:{
+  mileage: {
     type: Number,
     trim: true,
     max: [60, 'Mileage is too high'],
@@ -92,20 +92,20 @@ const vehicleSchema = new Schema({
   battery_range: {
     type: Number,
     min: [30, 'Battery range is too low'],
-    max: [300, 'Battery range is too high']
+    max: [700, 'Battery range is too high']
   },
 
   last_maintenance: {
     type: Date
   },
-  
+
   registeredBy: {
-   type: Schema.Types.ObjectId,
-   ref: "User"
+    type: Schema.Types.ObjectId,
+    ref: "User"
   }
 
 }, {
-  timestamps: true,         
+  timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
